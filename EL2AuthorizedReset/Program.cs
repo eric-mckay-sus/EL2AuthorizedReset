@@ -1,10 +1,28 @@
 ﻿using Microsoft.Data.SqlClient;
 using DotNetEnv;
 using System.Data;
+using CsvHelper;
+using CsvHelper.Configuration;
+using System.Globalization;
+
+public class Line
+{
+    public int CmmsNum { get; set; }
+    public string Name { get; set; }
+}
+
+public sealed class LineMap : ClassMap<Line>
+{
+    public LineMap()
+    {
+        Map(m => m.CmmsNum).Name("CMMS #");
+        Map(m => m.Name).Name("Location");
+    }
+}
 
 /// <summary>
 /// A CSV parser to get the current mappings of CMMS numbers to line names.
-/// Upon successful parsing, replaces the current dataset in 
+/// Upon successful parsing, replaces the current dataset in the DB
 /// </summary>
 class Program
 {
@@ -43,17 +61,20 @@ class Program
         DataTable table = new();
         table.Columns.Add("cmmsNum", typeof(int));
         table.Columns.Add("lineName", typeof(string));
-        using StreamReader reader = new(file);
-        foreach (string line in File.ReadLines(file).Skip(1)) // Discard header line, then iterate to end of file (one batch)
+
+        using (StreamReader reader = new(file))
+        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
         {
-            string[] split = line.Split(',');
-            // If TryParse doesn't recognize the CMMS number, skip the entry
-            if(!int.TryParse(split[0], out int cmms)) continue;
-            string rawLineName = split[3]; 
-            string lineName = rawLineName.Length > 8 ? rawLineName[..8] : rawLineName;
-            table.Rows.Add(cmms, lineName);
+            csv.Context.RegisterClassMap<LineMap>();
+            var records = csv.GetRecords<Line>();
+            foreach (var record in records)
+            {
+                string name = record.Name; // don't care whether this mutates record.Name or not
+                if (name.Length > 8) name = name[..8];
+                table.Rows.Add(record.CmmsNum, name);
+            }
+            Console.WriteLine("Complete!");
         }
-        Console.WriteLine("Complete!");
         Console.Write("Uploading...");
         try
         {
