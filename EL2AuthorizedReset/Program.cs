@@ -1,14 +1,18 @@
 ﻿using Microsoft.Data.SqlClient;
 using DotNetEnv;
-using System.Data;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
+using System.Data;
 
 public class Line
 {
     public int CmmsNum { get; set; }
-    public string Name { get; set; }
+    private string _name;
+    public string Name {
+        get => _name;
+        set => _name = value?.Length > 8 ? value[..8] : value; // all values are truncated on assignment, not just retrieval like they were with the map
+    }
 }
 
 public sealed class LineMap : ClassMap<Line>
@@ -44,7 +48,7 @@ class Program
         }
 
         Console.Write("Connecting...");
-        Env.Load(); // Only use of DotNetEnv
+        Env.Load();
         var builder = new SqlConnectionStringBuilder
         {
             DataSource = Environment.GetEnvironmentVariable("DB_SERVER"),
@@ -56,34 +60,35 @@ class Program
         using SqlBulkCopy bulkCopy = new(builder.ConnectionString, SqlBulkCopyOptions.CheckConstraints);
         bulkCopy.DestinationTableName = "EL2AuthorizedReset.dbo.CmmsToLineName";
         Console.WriteLine("Connected!");
-        
-        Console.Write("Parsing...");
-        DataTable table = new();
-        table.Columns.Add("cmmsNum", typeof(int));
-        table.Columns.Add("lineName", typeof(string));
 
-        using (StreamReader reader = new(file))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        // The layers of wrapping are kind of disgusting, but we need an open StreamReader to create a CsvReader
+        // The CsvReader gives us access to CsvDataReader to stream from the table (to the SqlBulkCopy)
+        // Finally, we can use our custom TruncatingDataReader to enforce the 8-character limit while streaming from the CsvDataReader
+        using var reader = new StreamReader(file);
+        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+        csv.Context.RegisterClassMap<LineMap>();
+        using var dr = new CsvDataReader(csv);
+
+        // Wrap the reader in a helper to truncate any string value exceeding the maximum size of the destination column.
+        // This keeps the streaming of CsvDataReader (no DataTable) while enforcing the 8‑character limit on the line name field.
+        var maxLengths = new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase)
         {
-            csv.Context.RegisterClassMap<LineMap>();
-            var records = csv.GetRecords<Line>();
-            foreach (var record in records)
-            {
-                string name = record.Name; // don't care whether this mutates record.Name or not
-                if (name.Length > 8) name = name[..8];
-                table.Rows.Add(record.CmmsNum, name);
-            }
-            Console.WriteLine("Complete!");
-        }
-        Console.Write("Uploading...");
+            ["Location"] = 8
+        };
+        using IDataReader trunc = new TruncatingDataReader(dr, maxLengths);
+
+        bulkCopy.ColumnMappings.Add("Cmms #", "cmmsNum");
+        bulkCopy.ColumnMappings.Add("Location", "lineName");
+
         try
         {
-            bulkCopy.WriteToServer(table);
+            Console.Write("Uploading...");
+            bulkCopy.WriteToServer(trunc);
+            Console.WriteLine("Complete!");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Bulk Copy Error: {ex.Message}");
         }
-        Console.WriteLine("Complete!");        
     }
 }
