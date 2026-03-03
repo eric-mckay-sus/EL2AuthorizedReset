@@ -25,7 +25,7 @@ Multiplicities
 ---------
 
 - Badge to associate: `1..1` (Every associate has a badge)
-- Associate to line `1..n` (Every associate has at least one line, otherwise they shouldn't be in the system)
+- Associate to line `0..n` (Associates may have multiple lines, but are not required to have one to exist)
 - CMMS to line `1..1` (Every CMMS number uniquely identifies a line name)
 
 Tables
