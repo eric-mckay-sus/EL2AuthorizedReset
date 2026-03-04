@@ -20,7 +20,7 @@
         <InputNumber id="assocNum" @bind-Value="associate.AssocNum" />
     </div>
     <div>
-        <label for="badgeNum">Badge Number:</label>
+        <label for="badgeNum">Badge Number:</label> @* Need validation for no duplicates bc PK*@
         <InputNumber id="badgeNum" @bind-Value="associate.BadgeNum" />
     </div>
     @* Leave out admin privileges, we don't want admins to be able to create other admins *@
@@ -28,8 +28,25 @@
     <button type="submit" class="btn btn-primary">Add Associate</button>
 </EditForm>
 
+@if (DataView.Count > 0) {
+    <UniversalTable T="Associate" Items="DataView" OnDelete="HandleDelete" />
+}
+
+<DeleteDialog @ref="deleteDialog" />
+
 @code {
     private Associate associate = new Associate();
+    private List<Associate> DataView = [];
+    private DeleteDialog deleteDialog = default!;
+
+    protected override async Task OnInitializedAsync(){
+        await LoadData();
+    }
+
+    private async Task LoadData(){
+        using var context = DbFactory.CreateDbContext();
+        DataView = await context.Set<Associate>().ToListAsync();
+    }
 
     private async Task HandleValidSubmit()
     {
@@ -37,5 +54,18 @@
         
         context.AssociateInfo.Add(associate);
         await context.SaveChangesAsync();
+
+        associate = new Associate();
+        await LoadData();
+    }
+
+    private async Task HandleDelete(Associate item)
+    {
+        if (await deleteDialog.ConfirmAsync(item, item.Name ?? item.BadgeNum.ToString())) {
+            using var context = DbFactory.CreateDbContext();
+            context.Set<Associate>().Remove(item);
+            await context.SaveChangesAsync();
+            await LoadData();
+        }
     }
 }

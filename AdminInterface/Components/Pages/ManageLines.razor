@@ -24,8 +24,25 @@
     <button type="submit" class="btn btn-primary">Add Line for Associate</button>
 </EditForm>
 
+@if (DataView.Count > 0) {
+    <UniversalTable T="AssociateLine" Items="DataView" OnDelete="HandleDelete" />
+}
+
+<DeleteDialog @ref="deleteDialog" />
+
 @code {
     private AssociateLine associateLine = new AssociateLine();
+    private List<AssociateLine> DataView = [];
+    private DeleteDialog deleteDialog = default!;
+
+    protected override async Task OnInitializedAsync(){
+        await LoadData();
+    }
+
+    private async Task LoadData(){
+        using var context = DbFactory.CreateDbContext();
+        DataView = await context.Set<AssociateLine>().ToListAsync();
+    }
 
     private async Task HandleValidSubmit()
     {
@@ -33,5 +50,18 @@
         
         context.AssociateToLine.Add(associateLine);
         await context.SaveChangesAsync();
+        
+        associateLine = new AssociateLine();
+        await LoadData();
+    }
+
+    private async Task HandleDelete(AssociateLine item)
+    {
+        if (await deleteDialog.ConfirmAsync(item, item.Line ?? item.AssocNum.ToString())) {
+            using var context = DbFactory.CreateDbContext();
+            context.Set<AssociateLine>().Remove(item);
+            await context.SaveChangesAsync();
+            await LoadData();
+        }
     }
 }
