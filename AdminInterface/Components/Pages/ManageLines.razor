@@ -1,0 +1,37 @@
+﻿@page "/manage-lines"
+@using AdminInterface
+@inject IDbContextFactory<AuthResetDbContext> DbFactory
+@rendermode InteractiveServer
+
+<PageTitle>Manage Lines</PageTitle>
+
+<h1>Manage Lines for an Associate</h1>
+
+<EditForm Model="@associateLine" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="assocNum">Associate Number:</label>
+        <InputNumber id="assocNum" @bind-Value="associateLine.AssocNum" />
+    </div>
+    <div>
+        <label for="lineName">Line Name:</label>
+        <InputText id="lineName" @bind-Value="associateLine.Line" />
+    </div>
+    @* Need form validation for whether associate & named line exist *@
+
+    <button type="submit" class="btn btn-primary">Add Line for Associate</button>
+</EditForm>
+
+@code {
+    private AssociateLine associateLine = new AssociateLine();
+
+    private async Task HandleValidSubmit()
+    {
+        using var context = DbFactory.CreateDbContext();
+        
+        context.AssociateToLine.Add(associateLine);
+        await context.SaveChangesAsync();
+    }
+}
