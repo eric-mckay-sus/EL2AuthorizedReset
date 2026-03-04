@@ -8,7 +8,7 @@ namespace AdminInterface;
 /// <param name="options">The server details and login credentials</param>
 public class AuthResetDbContext(DbContextOptions<AuthResetDbContext> options) : DbContext(options)
 {
-    // One set per table
+    // One set per table, MUST match table names
     public DbSet<Associate> AssociateInfo { get; set; }
     public DbSet<AssociateLine> AssociateToLine { get; set; }
     public DbSet<CmmsLine> CmmsToLineName { get; set; }
