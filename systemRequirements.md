@@ -18,8 +18,15 @@ Admin interfaces
 Access should be restricted by some other authentication (i.e. Windows login, need IT help)
 
 - **CSV upload:** Assuming no live lookup, update the registry of CMMS numbers to locations
+  - Could add interface to admin page
+  - File upload, when file detected, show warning
 - **Associate Management:** Add/remove associates from DB
+  - Prominent *add* button at top
+  - Search bar (reuse from line management page)
+  - List associates, remove button for each (with delete dialog)
 - **Line Management:** Add/remove lines by associate
+  - Search by name/associate number
+  - Show all matching results, maybe split screen on selection to simultaneously show list and selected associate info?
 
 Multiplicities
 ---------

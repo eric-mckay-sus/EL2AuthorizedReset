@@ -1,0 +1,41 @@
+﻿@page "/manage-associates"
+@using AdminInterface
+@inject IDbContextFactory<AuthResetDbContext> DbFactory
+@rendermode InteractiveServer
+
+<PageTitle>Manage Associates</PageTitle>
+
+<h1>Add/Remove an Associate</h1>
+
+<EditForm Model="@associate" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="name">Associate Name:</label>
+        <InputText id="name" @bind-Value="associate.Name" />
+    </div>
+    <div>
+        <label for="assocNum">Associate Number:</label>
+        <InputNumber id="assocNum" @bind-Value="associate.AssocNum" />
+    </div>
+    <div>
+        <label for="badgeNum">Badge Number:</label>
+        <InputNumber id="badgeNum" @bind-Value="associate.BadgeNum" />
+    </div>
+    @* Leave out admin privileges, we don't want admins to be able to create other admins *@
+
+    <button type="submit" class="btn btn-primary">Add Associate</button>
+</EditForm>
+
+@code {
+    private Associate associate = new Associate();
+
+    private async Task HandleValidSubmit()
+    {
+        using var context = DbFactory.CreateDbContext();
+        
+        context.AssociateInfo.Add(associate);
+        await context.SaveChangesAsync();
+    }
+}

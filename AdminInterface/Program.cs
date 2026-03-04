@@ -1,6 +1,13 @@
 using AdminInterface.Components;
+using Microsoft.EntityFrameworkCore;
+using AdminInterface;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection"); // from appsettings.json, no idea how this looks in production
+
+builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
