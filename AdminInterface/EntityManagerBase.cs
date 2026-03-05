@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
 using AdminInterface.Components.Pages;
 
 namespace AdminInterface;
@@ -66,34 +65,16 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
             await LoadData();
             IsFormVisible = false;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
+        catch (DbUpdateException)
         {
-            ErrorMessage = sqlEx.Number switch
-            {
-                547 => "Constraint Error: The referenced associate or line name does not exist.",
-                2627 or 2601 => $"Duplicate Error: {GetPKErrorMessage(NewItem)}",
-                _ => $"Database Error: {sqlEx.Message}"
-            };
-            Console.WriteLine(sqlEx.Message);
+            // Fallback for race conditions (form validation handled elsewhere)
+            ErrorMessage = "A database error occurred. The data may have changed since you opened the form.";
         }
         catch (Exception)
         {
             ErrorMessage = "An unexpected error occurred. Please try again.";
         }
     }
-
-    /// <summary>
-    /// Gets the error message associated with a primary key violation
-    /// </summary>
-    /// <typeparam name="T">The type of the item</typeparam>
-    /// <param name="item">The item for which the error was thrown</param>
-    /// <returns>The error message accurate to item's type</returns>
-    private static string GetPKErrorMessage<T>(T item) => item switch
-    {
-        Associate => $"That associate/badge number is already assigned to another associate in the system.", // Try to pin down which
-        AssociateLine al => $"(#{al.AssocNum}) already authorized for {al.Line}.", // Try to get name (need to find corresponding anl)
-        _ => $"this {item?.GetType()}"
-    };
 
     /// <summary>
     /// Assigns default behavior for removing a row from the database
