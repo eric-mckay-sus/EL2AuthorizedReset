@@ -1,7 +1,10 @@
 ﻿@page "/"
+@using AdminInterface
+@inherits EntityManagerBase<Reset, Reset>
 
 <PageTitle>Home</PageTitle>
 
 <h1>Historical Resets</h1>
 
-@* <UniversalTable T="Associate" Items="DataView" /> *@
+@* Pretty basic for now, might add filters later, but DataView is already perfectly inherited via EntityManagerBase *@
+<UniversalTable T="Reset" Items="DataView" />
