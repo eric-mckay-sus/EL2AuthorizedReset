@@ -23,7 +23,7 @@
 
     private static string GetDeleteMessage<T>(T item) => item switch
     {
-        Associate assoc => $"{assoc.Name} from the system",
+        Associate assoc => $"{assoc.Name} (#{assoc.AssocNum}) from the system",
         AssocNameLine anl => $"line {anl.Line} from the authorized reset list for {anl.AssocName} (#{anl.AssocNum})",
         _ => $"this {item?.GetType()}"
     };

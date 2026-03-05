@@ -22,11 +22,13 @@
                         {
                             <td>@(prop.GetValue(item)?.ToString() ?? "—")</td>
                         }
-                        <td>
-                            <button class="btn btn-link p-0 text-danger" @onclick="() => OnDelete.InvokeAsync(item)">
-                                <Icon Name="IconName.Trash" Size="IconSize.x4" />
-                            </button>
-                        </td>
+                        @* @if (OnDelete != null) { *@
+                            <td>
+                                <button class="btn btn-link p-0 text-danger" @onclick="() => OnDelete.InvokeAsync(item)">
+                                    <Icon Name="IconName.Trash" Size="IconSize.x4" />
+                                </button>
+                            </td>
+                        @* } *@
                     </tr>
                 </Virtualize>
             </tbody>
