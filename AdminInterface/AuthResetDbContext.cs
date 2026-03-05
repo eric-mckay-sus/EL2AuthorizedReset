@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AdminInterface;
@@ -10,7 +11,8 @@ public class AuthResetDbContext(DbContextOptions<AuthResetDbContext> options) : 
 {
     // One set per table, MUST match table names
     public DbSet<Associate> AssociateInfo { get; set; }
-    public DbSet<AssociateLine> AssociateToLine { get; set; }
+    public DbSet<AssociateLine> AssociateToLine { get; set; } // for writing (table)
+    public DbSet<AssocNameLine> AssocNameToLine { get; set; } // for reading (view)
     public DbSet<CmmsLine> CmmsToLineName { get; set; }
     public DbSet<Reset> Historical { get; set; }
 }
@@ -22,12 +24,18 @@ public class AuthResetDbContext(DbContextOptions<AuthResetDbContext> options) : 
 [PrimaryKey(nameof(BadgeNum))]
 public class Associate
 {
+    [Required(ErrorMessage = "Badge number is required")]
+    [Range(1, 99999, ErrorMessage = "Badge number must be five digits")]
     [Column("badgeNum")]
     public int? BadgeNum { get; set; }
 
+    [Required(ErrorMessage = "Associate number is required")]
+    [Range(1, 9999, ErrorMessage = "Associate number must be four digits")]
     [Column("associateNum")]
     public int? AssocNum { get; set; }
 
+    [Required(ErrorMessage = "Associate name is required")]
+    [MaxLength(32, ErrorMessage = "Associate name must be no longer than 32 characters")]
     [Column("associateName")]
     public string? Name { get; set; }
 
@@ -36,16 +44,47 @@ public class Associate
 }
 
 /// <summary>
+/// To be implemented by AssociateLine and its view.
+/// Contains the shared information between the two classes
+/// </summary>
+public interface IAssociateLink
+{
+    int? AssocNum { get; set; }
+    string? Line { get; set; }
+}
+
+/// <summary>
 /// Represents one row of AssociateToLine in the DB
 /// NOTE: VERY SENSITIVE TO COL NAME CHANGES
 /// </summary>
-[PrimaryKey(nameof(AssocNum))]
-public class AssociateLine
+[PrimaryKey(nameof(AssocNum), nameof(Line))]
+public class AssociateLine : IAssociateLink
 {
+    [Required(ErrorMessage = "Associate number is required")]
+    [Range(1, 9999, ErrorMessage = "Associate number must be four digits")]
     [Column("associateNum")]
     public int? AssocNum { get; set; }
 
+    [Required(ErrorMessage = "Line name is required")]
+    [MaxLength(32, ErrorMessage = "Line name must be no longer than 8 characters (try truncating)")]
     [Column("lineName")]
+    public string? Line { get; set; }
+}
+
+/// <summary>
+/// Represents one row of AssocNameToLine in the DB
+/// NOTE: VERY SENSITIVE TO COL NAME CHANGES
+/// </summary>
+[PrimaryKey(nameof(AssocNum), nameof(Line))]
+public class AssocNameLine : IAssociateLink
+{
+    [Column("Associate Name")]
+    public string? AssocName { get; set; }
+
+    [Column("Associate Number")]
+    public int? AssocNum { get; set; }
+
+    [Column("Authorized Line")]
     public string? Line { get; set; }
 }
 
@@ -74,17 +113,17 @@ public class Reset
     public DateTime? Timestamp;
 
     [Column("associateNum")]
-    public DateTime? AssocNum;
+    public int? AssocNum;
 
     [Column("associateName")]
-    public DateTime? AssocName;
+    public string? AssocName;
 
     [Column("cmmsNum")]
-    public DateTime? CmmsNum;
+    public int? CmmsNum;
 
     [Column("lineName")]
-    public DateTime? LineName;
+    public string? LineName;
 
     [Column("isAuthorized")]
-    public DateTime? IsAuthorized;
+    public bool? IsAuthorized;
 }
