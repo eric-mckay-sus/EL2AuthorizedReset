@@ -26,11 +26,13 @@ public class Associate
 {
     [Required(ErrorMessage = "Badge number is required")]
     [Range(1, 99999, ErrorMessage = "Badge number must be five digits")]
+    [UniqueBadgeNumber]
     [Column("badgeNum")]
     public int? BadgeNum { get; set; }
 
     [Required(ErrorMessage = "Associate number is required")]
     [Range(1, 9999, ErrorMessage = "Associate number must be four digits")]
+    [UniqueAssociateNumber]
     [Column("associateNum")]
     public int? AssocNum { get; set; }
 
@@ -58,15 +60,18 @@ public interface IAssociateLink
 /// NOTE: VERY SENSITIVE TO COL NAME CHANGES
 /// </summary>
 [PrimaryKey(nameof(AssocNum), nameof(Line))]
+[ValidateLineAssignedToAssociate]
 public class AssociateLine : IAssociateLink
 {
     [Required(ErrorMessage = "Associate number is required")]
     [Range(1, 9999, ErrorMessage = "Associate number must be four digits")]
+    [ValidateAssociateExists]
     [Column("associateNum")]
     public int? AssocNum { get; set; }
 
     [Required(ErrorMessage = "Line name is required")]
     [MaxLength(32, ErrorMessage = "Line name must be no longer than 8 characters (try truncating)")]
+    [ValidateLineExists]
     [Column("lineName")]
     public string? Line { get; set; }
 }
