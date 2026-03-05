@@ -115,20 +115,20 @@ public class CmmsLine
 public class Reset
 {
     [Column("requestTime")]
-    public DateTime? Timestamp;
+    public DateTime? Timestamp { get; }
 
     [Column("associateNum")]
-    public int? AssocNum;
+    public int? AssocNum { get; }
 
     [Column("associateName")]
-    public string? AssocName;
+    public string? AssocName { get; }
 
     [Column("cmmsNum")]
-    public int? CmmsNum;
+    public int? CmmsNum { get; }
 
     [Column("lineName")]
-    public string? LineName;
+    public string? LineName { get; }
 
     [Column("isAuthorized")]
-    public bool? IsAuthorized;
+    public bool? IsAuthorized { get; }
 }
