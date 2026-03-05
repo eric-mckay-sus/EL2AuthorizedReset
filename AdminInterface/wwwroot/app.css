@@ -15,12 +15,16 @@ a, .btn-link {
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: hsl(210, 76%, 40%) !important;
+    border-color: hsl(210, 76%, 35%) !important;
+}
+
+.btn-primary:hover {
+    background-color: hsl(210, 76%, 45%) !important;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb !important;
 }
 
 .content {
@@ -130,4 +134,67 @@ h1:focus {
     max-height: calc(100vh - 100px);
     border: 1px solid #dee2e6;
     margin-bottom: 1rem;
+}
+
+/* Container for the form to give it a 'Sheet' look */
+.form-card {
+    background: #ffffff;
+    padding: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.form-title {
+    color: #4a5568;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    border-bottom: 2px solid #f7fafc;
+    padding-bottom: 0.5rem;
+}
+
+/* Make labels look professional */
+.form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #718096;
+    margin-bottom: 0.4rem;
+}
+
+/* Style the Inputs */
+.form-control {
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+}
+
+/* Button Alignment */
+.form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #edf2f7;
+    padding-top: 1rem;
+}
+
+.animate-fade-in {
+    animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

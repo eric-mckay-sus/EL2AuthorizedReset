@@ -3,7 +3,7 @@
 @code {
     private ConfirmDialog dialog = default!;
 
-    public async Task<bool> ConfirmAsync<T>(T item, string identifier)
+    public async Task<bool> ConfirmAsync<T>(T item)
     {
         var options = new ConfirmDialogOptions
         {
@@ -15,9 +15,16 @@
 
         return await dialog.ShowAsync(
             title: "Confirm Deletion",
-            message1: $"Are you sure you want to delete this {typeof(T).Name}?",
-            message2: $"Target: {identifier}",
+            message1: $"Are you sure you want to remove {GetDeleteMessage(item)}?",
+            message2: "THIS ACTION CANNOT BE UNDONE!",
             confirmDialogOptions: options
         );
     }
+
+    private static string GetDeleteMessage<T>(T item) => item switch
+    {
+        Associate assoc => $"{assoc.Name} from the system",
+        AssocNameLine anl => $"line {anl.Line} from the authorized reset list for {anl.AssocName} (#{anl.AssocNum})",
+        _ => $"this {item?.GetType()}"
+    };
 }
