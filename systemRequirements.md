@@ -33,13 +33,16 @@ Multiplicities
 
 - Badge to associate: `1..1` (Every associate has a badge)
 - Associate to line `0..n` (Associates may have multiple lines, but are not required to have one to exist)
-- CMMS to line `1..1` (Every CMMS number uniquely identifies a line name)
+- CMMS to line `1..1` (Every CMMS is located at exactly one line)
 
 Tables
 ---------
 
 - Associate info (badge number to associate number and admin privileges)
 - Associate number to line names
+  - FK to associate info to guarantee existence of associate with permissions
+  - Ideally would FK to associate-line, but this would cause issues with managing machine locations
+    - e.g. machine with CMMS 7 moves from F6 to F25. Trying to simply add row 7-F25 would fail by PK violation, checking to replace would be too slow
 - CMMS number to line name
 - Historical (timestamp, associate number, CMMS number, line name, and whether authorized)
 
