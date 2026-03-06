@@ -44,6 +44,32 @@
         <ErrorDisplay ErrorMessage="@ErrorMessage" />
     </div>
 } else {
+    <div class="row">
+        <div class="col-6">
+            <EditForm Model="this" OnValidSubmit="LoadData">
+                <div class="input-group mb-2">
+                    <InputText 
+                        id="searchBar" 
+                        @bind-Value="searchText"
+                        class="form-control" 
+                        placeholder="Search by associate name or number"
+                        autocomplete="off" />
+                        @if (!string.IsNullOrEmpty(searchText))
+                        {
+                            <span class="input-group-text clear-addon">
+                                <button type="button" class="btn-close" aria-label="Clear" 
+                                    @onclick="ClearSearchBar" 
+                                    style="font-size: 0.8rem;"></button>
+                            </span>
+                        }
+                    <button type="submit" class="btn btn-primary px-4 d-flex align-items-center"
+                        @onclick="async () => await LoadData()">
+                    <i class="bi bi-arrow-right" style="font-size: 1.5rem;"></i></button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+    
     <div class="d-flex justify-content-center mb-3">
         <button class="btn btn-success" @onclick="ShowForm">
             <i class="bi bi-plus-lg"></i> Add New Associate
@@ -54,12 +80,55 @@
 @if (DataView.Count > 0) {
     @if (HandleExpand.HasDelegate){
         <UniversalTable T="Associate" Items="DataView" OnDelete="HandleDelete" OnExpand="HandleExpand" />
+    } else {
+        <UniversalTable T="Associate" Items="DataView" OnDelete="HandleDelete" />
     }
-    
+} else {
+    <h3>No associates matched search criteria @searchText</h3>
 }
 
 <DeleteDialog @ref="deleteDialog" />
 
 @code{
+    private string searchText = "";
     [Parameter] public EventCallback<Associate> HandleExpand { get; set; }
+    [Parameter] public Associate target { get; set; }
+
+    /// <summary>
+    /// Loads data, then ensures there's no results being displayed for lines connected to the now-hiding associate
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task LoadData()
+    {
+        await base.LoadData();
+
+        if (!DataView.Contains(target) && !string.IsNullOrEmpty(searchText))
+        {
+            // Reuse OnItemDeleted to close the targeted associate lines view
+            if (OnItemDeleted.HasDelegate)
+            {
+                await OnItemDeleted.InvokeAsync(new Associate()); 
+            }
+        }
+    }
+
+    /// <summary>
+    /// Applies the search filter from the 
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    protected override IQueryable<Associate> ApplyFilter(IQueryable<Associate> query)
+    {
+        if(int.TryParse(searchText, out int assocNum)){
+            query = query.Where(a => a.AssocNum == assocNum);
+        } else {
+            query = query.Where(a => a.Name.Contains(searchText));
+        }
+        return query; // to satisfy compiler ig
+    }
+
+    protected async Task ClearSearchBar(){
+        searchText = "";
+        await LoadData();
+    }
 }
