@@ -14,6 +14,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     where TRead : class, new()
 {
     [Inject] protected IDbContextFactory<AuthResetDbContext> DbFactory { get; set; } = default!; // The DB context
+    [Parameter] public EventCallback<TRead> OnItemDeleted { get; set; }
 
     protected TWrite NewItem = new(); // The item to be added (from the add form)
     protected List<TRead> DataView = []; // The view to READ from (type may be different from the one being written)
@@ -27,6 +28,10 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     /// <returns></returns>
     protected override async Task OnInitializedAsync() => await LoadData();
 
+    /// <summary>
+    /// Load the table, applying any filters the child assigns
+    /// </summary>
+    /// <returns></returns>
     protected async Task LoadData()
     {
         using var context = DbFactory.CreateDbContext();
@@ -124,6 +129,12 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
         {
             using var context = DbFactory.CreateDbContext();
             await ExecuteDelete(context, item);
+
+            if (OnItemDeleted.HasDelegate)
+            {
+                await OnItemDeleted.InvokeAsync(item);
+            }
+            
             await LoadData();
         }
     }
