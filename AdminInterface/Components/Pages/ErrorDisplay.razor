@@ -1,0 +1,21 @@
+@if (ErrorMessage != null)
+{
+    bool isWarning = ErrorMessage.Contains("This search", StringComparison.OrdinalIgnoreCase);
+    string alertClass = isWarning ? "alert-warning" : "alert-danger";
+    string iconClass = isWarning ? "bi-exclamation-triangle" : "bi-exclamation-octagon-fill";
+
+    <div class="alert @alertClass alert-dismissible fade show mb-0" role="alert">
+        <strong><i class="bi @iconClass" style="font-size: 1rem;"></i></strong> 
+            <span class="d-inline-flex">
+                <Markdown>
+                    @((MarkupString)ErrorMessage)
+                </Markdown>
+            </span>
+        <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+}

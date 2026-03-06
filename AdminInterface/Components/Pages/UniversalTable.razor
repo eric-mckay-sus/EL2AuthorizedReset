@@ -1,0 +1,48 @@
+@typeparam T
+@using System.Reflection
+@using System.ComponentModel.DataAnnotations.Schema
+
+<div class="table-responsive-wrapper">
+    <div class="table-container">
+        <table class="table res-table table-striped text-nowrap">
+            <thead class="table-dark">
+                <tr>
+                    @foreach (var prop in _cachedProps)
+                    {
+                        var attribute = prop.GetCustomAttribute<ColumnAttribute>();
+                        <th>@(attribute?.Name ?? prop.Name)</th>
+                    }
+                     @if (OnDelete.HasDelegate){
+                        <th>Actions</th> @* For the delete button, plus probably an edit button if/when that is added later *@
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                <Virtualize TItem="T" Items="@(Items?.ToList())" Context="item" OverscanCount="10">
+                    <tr @key="GetKey(item)">
+                        @foreach (var prop in _cachedProps)
+                        {
+                            <td>@(prop.GetValue(item)?.ToString() ?? "—")</td>
+                        }
+                        @* Only show the delete column if there's a delete binding *@
+                        @if (OnDelete.HasDelegate){
+                            <td>
+                                <button class="btn btn-link p-0 text-danger" @onclick="() => OnDelete.InvokeAsync(item)">
+                                    <Icon Name="IconName.Trash" Size="IconSize.x4" />
+                                </button>
+                            </td>
+                        }
+                    </tr>
+                </Virtualize>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<T>? Items { get; set; }
+    [Parameter] public EventCallback<T> OnDelete { get; set; }
+    [Parameter] public Func<T, object>? KeySelector { get; set; }
+    private PropertyInfo[] _cachedProps = typeof(T).GetProperties();
+    private object GetKey(T item) => KeySelector?.Invoke(item) ?? item!;
+}
