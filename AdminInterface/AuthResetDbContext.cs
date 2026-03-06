@@ -41,8 +41,25 @@ public class Associate
     [Column("associateName")]
     public string? Name { get; set; }
 
-    [Column("isAdmin")]
-    public bool? IsAdmin { get; set; } = false; // default to no admin privileges
+    /// <summary>
+    /// Associates are equal if they share the same badge number (by PK definition)
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns>Whether this associate equals <paramref="obj /></returns>
+    public override bool Equals(object? obj)
+    {
+        if (obj is Associate other)
+        {
+            return BadgeNum == other.BadgeNum;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The hash code of an associate is the hash of its badge number
+    /// </summary>
+    /// <returns>The associate's hash code</returns>
+    public override int GetHashCode() => BadgeNum.GetHashCode();
 }
 
 /// <summary>
