@@ -65,7 +65,7 @@ public class ValidateLineExistsAttribute : ValidationAttribute
 
         // FK Check: Does Line exist?
         if (!context.CmmsToLineName.Any(l => l.LineName == al.Line))
-            return new ValidationResult($"Line '{al.Line}' is not valid.", [nameof(AssociateLine.Line)]);
+            return new ValidationResult($"Line '{al.Line}' is not valid. If it should be, please add it in the 'Update CMMS' section", [nameof(AssociateLine.Line)]);
 
         return ValidationResult.Success;
     }

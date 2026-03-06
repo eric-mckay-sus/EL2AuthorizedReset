@@ -4,7 +4,7 @@
 
 <PageTitle>Manage Associates</PageTitle>
 
-<h1>Add/Remove an Associate</h1>
+<h2>Add/Remove an Associate</h2>
 
 @if (IsFormVisible) {
     <div class="form-card mb-3 animate-fade-in">
@@ -52,7 +52,15 @@
 }
 
 @if (DataView.Count > 0) {
-    <UniversalTable T="Associate" Items="DataView" OnDelete="HandleDelete" />
+    @if (HandleExpand.HasDelegate){
+        <UniversalTable T="Associate" Items="DataView" OnDelete="HandleDelete" OnExpand="HandleExpand" />
+    }
+    
 }
 
 <DeleteDialog @ref="deleteDialog" />
+
+@code{
+    [Parameter] public EventCallback<Associate> HandleExpand { get; set; }
+    
+}
