@@ -32,7 +32,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     /// Load the table, applying any filters the child assigns
     /// </summary>
     /// <returns></returns>
-    protected async Task LoadData()
+    protected virtual async Task LoadData()
     {
         using var context = DbFactory.CreateDbContext();
 
@@ -134,7 +134,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
             {
                 await OnItemDeleted.InvokeAsync(item);
             }
-            
+
             await LoadData();
         }
     }
