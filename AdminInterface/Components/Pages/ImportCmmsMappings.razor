@@ -1,0 +1,73 @@
+@page "/import-cmms-mappings"
+@using EL2AuthorizedReset
+@inherits EntityManagerBase<CmmsLine, CmmsLine>
+@inject IWebHostEnvironment Environment
+@inject IConfiguration Config
+
+<h1>Update CMMS Mappings</h1>
+
+<p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number</p>
+
+<div class="upload-container mb-4">
+    <div class="upload-card">
+        <label for="fileInput" class="custom-file-upload">
+            <Icon Name="IconName.CloudArrowUp" /> Choose CSV File
+        </label>
+        <InputFile id="fileInput" OnChange="HandleFileSelection" accept=".csv" /> <br />
+
+        @if (!string.IsNullOrEmpty(uploadStatus))
+        {
+            <div class="status-box mt-3">
+                <div class="status-header">Upload Progress</div>
+                <pre class="status-content">@uploadStatus</pre>
+            </div>
+        }
+    </div>
+</div>
+
+<UniversalTable T="CmmsLine" Items="DataView.Take(100)" />
+
+@code {
+    private string? uploadStatus;
+
+    private async Task HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        uploadStatus = "Uploading...";
+        try
+        {
+            // The file content is read into a stream
+            var file = e.File;
+            if (file != null)
+            {
+                // Putting the upload in wwwroot works well from a file management standpoint, but will make dotnet watch a little buggy. dotnet run works fine.
+                var uploadsFolderPath = Path.Combine(Environment.WebRootPath, "uploads");
+                Directory.CreateDirectory(uploadsFolderPath); // Ensure directory exists
+
+                string trustedFileName = $"cmms_mappings_{DateTime.Now:yyyy-MM-dd}";
+                var filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(file.Name));
+
+                // Copy the file data from the read stream to the file stream on the server
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.OpenReadStream().CopyToAsync(stream);
+                }
+
+                // No risk of using null-forgiving operator because the app would have already crashed without a connection
+                string conn = Config.GetConnectionString("DefaultConnection")!;
+                uploadStatus = ""; // Clear so the upload has a fresh slate
+                var blazorProgress = new Progress<string>(msg => {
+                    uploadStatus += msg;
+                    StateHasChanged(); // Refresh UI to show "Parsing...", "Connected!", etc.
+                });
+                await UploadCsvToDb.Upload(filePath, conn, blazorProgress);
+                uploadStatus += $"\n'{file.Name}' successfully uploaded.";
+                File.Delete(filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            uploadStatus += $"\nUpload failed: {ex.Message}";
+        }
+    }
+}

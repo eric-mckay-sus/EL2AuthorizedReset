@@ -1,0 +1,30 @@
+<ConfirmDialog @ref="dialog" />
+
+@code {
+    private ConfirmDialog dialog = default!;
+
+    public async Task<bool> ConfirmAsync<T>(T item)
+    {
+        var options = new ConfirmDialogOptions
+        {
+            YesButtonText = "Delete",
+            YesButtonColor = ButtonColor.Danger,
+            NoButtonText = "Cancel",
+            NoButtonColor = ButtonColor.Secondary
+        };
+
+        return await dialog.ShowAsync(
+            title: "Confirm Deletion",
+            message1: $"Are you sure you want to remove {GetDeleteMessage(item)}?",
+            message2: "THIS ACTION CANNOT BE UNDONE!",
+            confirmDialogOptions: options
+        );
+    }
+
+    private static string GetDeleteMessage<T>(T item) => item switch
+    {
+        Associate assoc => $"{assoc.Name} (#{assoc.AssocNum}) from the system",
+        AssocNameLine anl => $"line {anl.Line} from the authorized reset list for {anl.AssocName} (#{anl.AssocNum})",
+        _ => $"this {item?.GetType()}"
+    };
+}

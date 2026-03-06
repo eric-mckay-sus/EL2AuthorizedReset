@@ -1,0 +1,70 @@
+﻿@page "/manage-lines"
+@using AdminInterface
+@inherits EntityManagerBase<AssociateLine, AssocNameLine>
+
+<PageTitle>Manage Lines</PageTitle>
+
+<h1>Manage Lines for an Associate</h1>
+
+@if (IsFormVisible) {
+    <div class="form-card mb-3 animate-fade-in">
+        <EditForm Model="@NewItem" OnValidSubmit="@HandleValidSubmit" class="form-card">
+            <DataAnnotationsValidator />
+
+            <div class="form-container">
+                <h5 class="form-title">Associate Details</h5>
+
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label for="assocNum" class="form-label">Associate Number:</label>
+                        <InputNumber id="assocNum" @bind-Value="NewItem.AssocNum" class="form-control" />
+                        <ValidationMessage For="@(() => NewItem.AssocNum)" />
+                    </div>
+                    <div class="col-6">
+                        <label for="lineName" class="form-label">Line Name:</label>
+                        <InputText id="lineName" @bind-Value="NewItem.Line" class="form-control" />
+                        <ValidationMessage For="@(() => NewItem.Line)" />
+                    </div>
+                </div>
+
+                <div class="form-actions d-flex justify-content-center gap-4">
+                    <button type="button" class="btn btn-outline-secondary btn-lg me-2" @onclick="CancelForm">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-plus-lg"></i> Authorize for Associate
+                    </button>
+                </div>
+            </div>
+        </EditForm>
+        <ErrorDisplay ErrorMessage="@ErrorMessage" />
+    </div>
+} else {
+    <div class="d-flex justify-content-center mb-3">
+        <button class="btn btn-success" @onclick="ShowForm">
+            <i class="bi bi-plus-lg"></i> Add New Line for Associate
+        </button>
+    </div>
+}
+
+@if (DataView.Count > 0) {
+    <UniversalTable
+        T="AssocNameLine"
+        Items="DataView"
+        OnDelete="HandleDelete"
+    />
+}
+
+<DeleteDialog @ref="deleteDialog" />
+
+@code {
+    protected override async Task ExecuteDelete(AuthResetDbContext context, AssocNameLine item)
+    {
+        var toDelete = await context.AssociateToLine
+            .FirstOrDefaultAsync(x => x.AssocNum == item.AssocNum && x.Line == item.Line);
+            
+        if (toDelete != null)
+        {
+            context.AssociateToLine.Remove(toDelete);
+            await context.SaveChangesAsync();
+        }
+    }
+}

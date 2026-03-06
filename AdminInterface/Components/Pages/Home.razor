@@ -1,7 +1,9 @@
 ﻿@page "/"
+@inherits EntityManagerBase<Reset, Reset>
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Historical Resets</h1>
 
-Welcome to your new app.
+@* Pretty basic for now, might add filters later, but DataView is already perfectly inherited via EntityManagerBase *@
+<UniversalTable T="Reset" Items="DataView" />
