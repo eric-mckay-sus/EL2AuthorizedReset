@@ -63,9 +63,6 @@ public interface IAssociateLink
 [ValidateLineAssignedToAssociate]
 public class AssociateLine : IAssociateLink
 {
-    [Required(ErrorMessage = "Associate number is required")]
-    [Range(1, 9999, ErrorMessage = "Associate number must be four digits")]
-    [ValidateAssociateExists]
     [Column("associateNum")]
     public int? AssocNum { get; set; }
 
