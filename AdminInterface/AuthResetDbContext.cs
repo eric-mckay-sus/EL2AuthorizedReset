@@ -101,7 +101,7 @@ public class AssocNameLine : IAssociateLink
 public class CmmsLine
 {
     [Column("cmmsNum")]
-    public string? CmmsNum { get; set; }
+    public int? CmmsNum { get; set; }
 
     [Column("lineName")]
     public string? LineName { get; set; }
