@@ -30,8 +30,23 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     protected async Task LoadData()
     {
         using var context = DbFactory.CreateDbContext();
-        DataView = await context.Set<TRead>().ToListAsync();
+
+        // Gets all results (delayed execution)
+        IQueryable<TRead> query = context.Set<TRead>();
+
+        // Apply filter(s) set by the child
+        query = ApplyFilter(query);
+
+        // Execute here (DataView requires a list for display)
+        DataView = await query.ToListAsync();
     }
+
+    /// <summary>
+    /// Override this in child components to provide specific filtering logic.
+    /// </summary>
+    /// <param name="query">The IQueryable implementation to which the query should be applied</param>
+    /// <returns>The query, filtered by whatever filter(s) applied by the child</returns>
+    protected virtual IQueryable<TRead> ApplyFilter(IQueryable<TRead> query) => query;
 
     /// <summary>
     /// Throw flag to display add form, view handles the actual displaying
