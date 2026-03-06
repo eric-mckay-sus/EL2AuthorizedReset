@@ -1,19 +1,30 @@
-html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+html, body, h1, h2 {
+    font-family: sans-serif, 'Helvetica Neue', Helvetica, Arial;
 }
 
 a, .btn-link {
     color: #006bb7;
 }
 
+/* Used by the delete button */
+.btn-link:hover {
+    transform: scale(1.1);
+    transition: ease 0.3s ease-in-out;
+    color: hsl(354, 80%, 60%); /* Ensures it stays red on hover */
+}
+
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: hsl(210, 76%, 40%) !important;
+    border-color: hsl(210, 76%, 35%) !important;
+}
+
+.btn-primary:hover {
+    background-color: hsl(210, 76%, 45%) !important;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb !important;
 }
 
 .content {
@@ -48,4 +59,204 @@ h1:focus {
 
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
+}
+
+/* Custom Data Grid Styling */
+.table-container {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+    width: 100%;
+    overflow-x: visible;
+    transition: all 0.3s ease-in-out;
+}
+
+.table-container.stale {
+    opacity: 0.5;
+    filter: grayscale(50%);
+    transition: all 0.5s ease-in-out;
+    pointer-events: none;
+}
+
+.table-container.loading {
+    opacity: 0.4;
+    cursor: wait;
+}
+
+/* Scrollable area with fixed height */
+.res-table-wrapper {
+    max-height: calc(100vh - 300px);
+    overflow: auto;
+    position: relative;
+}
+
+/* Professional Table Formatting */
+.res-table {
+    min-width: 1200px; 
+    width: 100%;
+    border-collapse: separate; /* Required for sticky headers to work correctly */
+    border-spacing: 0;
+}
+
+/* Center headers */
+.res-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    border-bottom: 2px solid #dee2e6;
+    white-space: nowrap;
+    padding: 12px 8px;
+    
+    text-align: center; 
+}
+
+.res-table tbody td {
+    padding: 8px;
+    vertical-align: middle;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+    
+    text-align: center;
+}
+
+/* This creates the 'sandbox' for the wide table */
+.table-responsive-wrapper {
+    width: 100%;
+    overflow-x: auto; /* Only this element will scroll horizontally */
+    position: relative;
+    max-height: calc(100vh - 100px);
+    border: 1px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
+/* Container for the form to give it a 'Sheet' look */
+.form-card {
+    background: #ffffff;
+    padding: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.form-title {
+    color: #4a5568;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    border-bottom: 2px solid #f7fafc;
+    padding-bottom: 0.5rem;
+}
+
+/* Make labels look professional */
+.form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #718096;
+    margin-bottom: 0.4rem;
+}
+
+/* Style the Inputs */
+.form-control {
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+}
+
+/* Button Alignment */
+.form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #edf2f7;
+    padding-top: 1rem;
+}
+
+.animate-fade-in {
+    animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Container for the upload area */
+.upload-card {
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: border-color 0.3s ease;
+}
+
+.upload-card:hover {
+    border-color: #007bff;
+}
+
+/* Hide the default simple input */
+#fileInput {
+    display: none;
+}
+
+/* Style the label as the button */
+.custom-file-upload {
+    display: inline-block;
+    padding: 10px 24px;
+    cursor: pointer;
+    background-color: hsl(211, 100%, 45%);
+    color: white;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: ease 0.2s;
+}
+
+.custom-file-upload:hover {
+    background-color: #0056b3;
+}
+
+/* Professional Status Box */
+.status-box {
+    text-align: left;
+    background: hsl(210, 11%, 90%);
+    color: hsl(210, 17%, 15%);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.status-header {
+    background: hsl(210, 10%, 87%);
+    padding: 8px 15px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: hsl(210, 11%, 15%);
+}
+
+.status-content {
+    padding: 15px;
+    margin: 0;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
 }
