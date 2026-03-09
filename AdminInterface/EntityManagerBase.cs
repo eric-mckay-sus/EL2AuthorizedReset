@@ -7,14 +7,14 @@ namespace AdminInterface;
 /// <summary>
 /// Defines the shared behavior for an admin interface page
 /// </summary>
-/// <typeparam name="TWrite">The datatype to insert (row from table)</typeparam>
-/// <typeparam name="TRead">The datatype to show (row from view, or table again if no view)</typeparam>
+/// <typeparam name="TWrite">The datatype to insert (row from SQL table)</typeparam>
+/// <typeparam name="TRead">The datatype to show (row from SQL view, or table again if no view)</typeparam>
 public class EntityManagerBase<TWrite, TRead> : ComponentBase
     where TWrite : class, new()
     where TRead : class, new()
 {
-    [Inject] protected IDbContextFactory<AuthResetDbContext> DbFactory { get; set; } = default!; // The DB context
-    [Parameter] public EventCallback<TRead> OnItemChanged { get; set; }
+    [Inject] protected IDbContextFactory<AuthResetDbContext> DbFactory { get; set; } = default!; // The thread-safe DB context generator
+    [Parameter] public EventCallback<TRead> OnItemChanged { get; set; } // An event to detect when an item might not appear in the DataView
 
     protected TWrite NewItem = new(); // The item to be added (from the add form)
     protected List<TRead> DataView = []; // The view to READ from (type may be different from the one being written)
@@ -72,7 +72,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     /// On submit, attempt to insert into table, and catch potential constraint violations
     /// </summary>
     /// <returns></returns>
-    protected async Task HandleValidSubmit()
+    protected virtual async Task HandleValidSubmit()
     {
         ErrorMessage = null;
         try

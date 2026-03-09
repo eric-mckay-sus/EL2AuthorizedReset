@@ -6,7 +6,7 @@
 
 @if (target != null){ @* For prerendering cases*@
     <div class="d-flex justify-content-between mb-3">
-        <h2>Manage Lines for @target.Name</h2>
+        <h2>Manage Lines for <strong>@target.Name</strong></h2>
         @if (OnClose.HasDelegate){
             <button type="button" class="btn-close" aria-label="Close" @onclick="OnClose"></button>
         }
@@ -75,21 +75,24 @@
     [Parameter] public EventCallback OnClose { get; set; }
     private List<string?> allAvailableLines = [];
 
+    /// <summary>
+    /// When the page is initialized, create a cache of all available lines for the autofill
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        // Load the list of valid lines from the DB once when the component starts
         using var context = DbFactory.CreateDbContext();
         allAvailableLines = await context.CmmsToLineName
             .Select(x => x.LineName)
             .Where(x => !string.IsNullOrEmpty(x))
             .Distinct()
             .ToListAsync();
-            
+
         await base.OnInitializedAsync();
     }
 
     /// <summary>
-    /// This ensures that if the 'associate' parameter changes, the data reloads
+    /// Whenever the target associate changes, prime the add form object and force a refresh
     /// </summary>
     /// <returns></returns>
     protected override async Task OnParametersSetAsync(){
@@ -98,8 +101,18 @@
             DataView.Clear();
             return;
         }
-        NewItem.AssocNum = target.AssocNum;
+        ResetNewItem();
         await LoadData();
+    }
+
+    /// <summary>
+    /// Creates a new object for the add form with the target associate number
+    /// </summary>
+    private void ResetNewItem(){
+        NewItem = new AssociateLine();
+        if (target != null){
+            NewItem.AssocNum = target.AssocNum;
+        }
     }
 
     /// <summary>
@@ -125,11 +138,26 @@
     {
         var toDelete = await context.AssociateToLine
             .FirstOrDefaultAsync(x => x.AssocNum == item.AssocNum && x.Line == item.Line);
-            
+
         if (toDelete != null)
         {
             context.AssociateToLine.Remove(toDelete);
             await context.SaveChangesAsync();
         }
+    }
+
+    /// <summary>
+    /// Because the user doesn't provide the associate number in the EditForm component,
+    /// we need to override the submitter to re-instantiate the object and force update the view so Blazor doesn't take shortcuts
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task HandleValidSubmit()
+    {
+        // Perform the base save logic (save new associate, call LoadData, hide associate addition form)
+        await base.HandleValidSubmit();
+
+        // Now prime the next form and inform Blazor to refresh the form binding
+        ResetNewItem();
+        StateHasChanged();
     }
 }
