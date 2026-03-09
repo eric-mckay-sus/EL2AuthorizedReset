@@ -7,13 +7,14 @@ namespace AdminInterface;
 /// <summary>
 /// Defines the shared behavior for an admin interface page
 /// </summary>
-/// <typeparam name="TWrite">The datatype to insert (row from table)</typeparam>
-/// <typeparam name="TRead">The datatype to show (row from view, or table again if no view)</typeparam>
+/// <typeparam name="TWrite">The datatype to insert (row from SQL table)</typeparam>
+/// <typeparam name="TRead">The datatype to show (row from SQL view, or table again if no view)</typeparam>
 public class EntityManagerBase<TWrite, TRead> : ComponentBase
     where TWrite : class, new()
     where TRead : class, new()
 {
-    [Inject] protected IDbContextFactory<AuthResetDbContext> DbFactory { get; set; } = default!; // The DB context
+    [Inject] protected IDbContextFactory<AuthResetDbContext> DbFactory { get; set; } = default!; // The thread-safe DB context generator
+    [Parameter] public EventCallback<TRead> OnItemChanged { get; set; } // An event to detect when an item might not appear in the DataView
 
     protected TWrite NewItem = new(); // The item to be added (from the add form)
     protected List<TRead> DataView = []; // The view to READ from (type may be different from the one being written)
@@ -27,11 +28,30 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     /// <returns></returns>
     protected override async Task OnInitializedAsync() => await LoadData();
 
-    protected async Task LoadData()
+    /// <summary>
+    /// Load the table, applying any filters the child assigns
+    /// </summary>
+    /// <returns></returns>
+    protected virtual async Task LoadData()
     {
         using var context = DbFactory.CreateDbContext();
-        DataView = await context.Set<TRead>().ToListAsync();
+
+        // Gets all results (delayed execution)
+        IQueryable<TRead> query = context.Set<TRead>();
+
+        // Apply filter(s) set by the child
+        query = ApplyFilter(query);
+
+        // Execute here (DataView requires a list for display)
+        DataView = await query.ToListAsync();
     }
+
+    /// <summary>
+    /// Override this in child components to provide specific filtering logic.
+    /// </summary>
+    /// <param name="query">The IQueryable implementation to which the query should be applied</param>
+    /// <returns>The query, filtered by whatever filter(s) applied by the child</returns>
+    protected virtual IQueryable<TRead> ApplyFilter(IQueryable<TRead> query) => query;
 
     /// <summary>
     /// Throw flag to display add form, view handles the actual displaying
@@ -52,7 +72,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     /// On submit, attempt to insert into table, and catch potential constraint violations
     /// </summary>
     /// <returns></returns>
-    protected async Task HandleValidSubmit()
+    protected virtual async Task HandleValidSubmit()
     {
         ErrorMessage = null;
         try
@@ -109,6 +129,12 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
         {
             using var context = DbFactory.CreateDbContext();
             await ExecuteDelete(context, item);
+
+            if (OnItemChanged.HasDelegate)
+            {
+                await OnItemChanged.InvokeAsync(item);
+            }
+
             await LoadData();
         }
     }

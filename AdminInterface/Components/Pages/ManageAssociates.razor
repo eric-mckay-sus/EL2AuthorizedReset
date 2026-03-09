@@ -1,10 +1,9 @@
-﻿@page "/manage-associates"
-@using AdminInterface
+﻿@using AdminInterface
 @inherits EntityManagerBase<Associate, Associate>
 
 <PageTitle>Manage Associates</PageTitle>
 
-<h1>Add/Remove an Associate</h1>
+<h2>Add/Remove an Associate</h2>
 
 @if (IsFormVisible) {
     <div class="form-card mb-3 animate-fade-in">
@@ -44,6 +43,34 @@
         <ErrorDisplay ErrorMessage="@ErrorMessage" />
     </div>
 } else {
+    @if (target == null && HandleExpand.HasDelegate){
+        <h6 class="mb-2">Click the three lines next to an associate to see their authorized lines</h6>
+    }
+    <div class="row">
+        <div class="col-6">
+            <EditForm Model="this" OnValidSubmit="LoadData">
+                <div class="input-group mb-2">
+                    <InputText 
+                        id="searchBar" 
+                        @bind-Value="searchText"
+                        class="form-control" 
+                        placeholder="Search by associate name or number"
+                        autocomplete="off" />
+                        @if (!string.IsNullOrEmpty(searchText))
+                        {
+                            <span class="input-group-text clear-addon">
+                                <button type="button" class="btn-close" aria-label="Clear" 
+                                    @onclick="ClearSearchBar" 
+                                    style="font-size: 0.8rem;"></button>
+                            </span>
+                        }
+                    <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                    <i class="bi bi-arrow-right" style="font-size: 1.5rem;"></i></button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+    
     <div class="d-flex justify-content-center mb-3">
         <button class="btn btn-success" @onclick="ShowForm">
             <i class="bi bi-plus-lg"></i> Add New Associate
@@ -52,7 +79,62 @@
 }
 
 @if (DataView.Count > 0) {
-    <UniversalTable T="Associate" Items="DataView" OnDelete="HandleDelete" />
+    @if (HandleExpand.HasDelegate){
+        <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" OnExpand="HandleExpand" />
+    } else {
+        <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" />
+    }
+} else {
+    <h3>No associates matched search criteria @searchText</h3>
 }
 
 <DeleteDialog @ref="deleteDialog" />
+
+@code{
+    private string searchText = "";
+    [Parameter] public EventCallback<Associate> HandleExpand { get; set; }
+    [Parameter] public Associate? target { get; set; }
+
+    /// <summary>
+    /// Override for table refresh that verifies the targeted associate is still in the dataview.
+    /// If it isn't, tell the parent to hide the associated lines
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task LoadData()
+    {
+        await base.LoadData();
+
+        if (target != null && !DataView.Contains(target) && !string.IsNullOrEmpty(searchText))
+        {
+            if (OnItemChanged.HasDelegate)
+            {
+                await OnItemChanged.InvokeAsync(target); 
+            }
+        }
+    }
+
+    /// <summary>
+    /// Applies the search bar contents as a query filter
+    /// Numbers are inferred to be associate number, anything else is substring containment for name
+    /// </summary>
+    /// <param name="query">The query to which the filter should be applied</param>
+    /// <returns>The query where results match the search criterion</returns>
+    protected override IQueryable<Associate> ApplyFilter(IQueryable<Associate> query)
+    {
+        if(int.TryParse(searchText, out int assocNum)){
+            query = query.Where(a => a.AssocNum == assocNum);
+        } else {
+            query = query.Where(a => a.Name.Contains(searchText));
+        }
+        return query; // to satisfy compiler ig
+    }
+
+    /// <summary>
+    /// Clear the search bar, then reload the table for the empty query
+    /// </summary>
+    /// <returns></returns>
+    protected async Task ClearSearchBar(){
+        searchText = "";
+        await LoadData();
+    }
+}

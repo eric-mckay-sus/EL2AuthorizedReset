@@ -1,0 +1,38 @@
+@page "/manage"
+@using AdminInterface
+
+<PageTitle>Manage</PageTitle>
+
+<div class="row overflow-hidden flex-nowrap">
+    @* Split screen gives the associate table half screen, otherwise fullscreen *@
+    <div class="@(isTargeting ? "col-7" : "col-12") transition-width">
+        <ManageAssociates target="targeted" HandleExpand="HandleExpand" OnItemChanged="HandleAssociateNotShown"/>
+    </div>
+    <div class="@(isTargeting ? "col-5" : "col-0") transition-width overflow-hidden" 
+         style="@(isTargeting ? "" : "display:none;")">
+            @if (isTargeting) {
+                <ManageLines target="targeted" OnClose="HandleClose" />
+            }
+    </div>
+</div>
+
+@code{
+    Associate? targeted;
+    bool isTargeting = false;
+    public void HandleExpand(Associate associate) {
+        targeted = associate;
+        isTargeting = true;
+    }
+    public void HandleClose(){
+        targeted = null;
+        isTargeting = false;
+    }
+
+    private void HandleAssociateNotShown(Associate changedAssociate)
+    {
+        if (targeted != null && changedAssociate.Equals(targeted))
+        {
+            HandleClose();
+        }
+    }
+}

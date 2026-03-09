@@ -1,70 +1,162 @@
-﻿@page "/manage-lines"
-@using AdminInterface
+﻿@using AdminInterface
 @inherits EntityManagerBase<AssociateLine, AssocNameLine>
 
 <PageTitle>Manage Lines</PageTitle>
 
-<h1>Manage Lines for an Associate</h1>
+@if (target != null){ @* For prerendering cases*@
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Manage Lines for <strong>@target.Name</strong></h2>
+        @if (OnClose.HasDelegate){
+            <button type="button" class="btn-close" aria-label="Close" @onclick="OnClose"></button>
+        }
+    </div>
 
-@if (IsFormVisible) {
-    <div class="form-card mb-3 animate-fade-in">
-        <EditForm Model="@NewItem" OnValidSubmit="@HandleValidSubmit" class="form-card">
-            <DataAnnotationsValidator />
+    @if (IsFormVisible) {
+        <div class="form-card mb-3 animate-fade-in">
+            <EditForm Model="@NewItem" OnValidSubmit="@HandleValidSubmit" class="form-card">
+                <DataAnnotationsValidator />
 
-            <div class="form-container">
-                <h5 class="form-title">Associate Details</h5>
+                <div class="form-container">
+                    <h5 class="form-title">Authorize New Line for @target.Name</h5>
 
-                <div class="row g-3">
-                    <div class="col-6">
-                        <label for="assocNum" class="form-label">Associate Number:</label>
-                        <InputNumber id="assocNum" @bind-Value="NewItem.AssocNum" class="form-control" />
-                        <ValidationMessage For="@(() => NewItem.AssocNum)" />
-                    </div>
-                    <div class="col-6">
+                    <div>
                         <label for="lineName" class="form-label">Line Name:</label>
-                        <InputText id="lineName" @bind-Value="NewItem.Line" class="form-control" />
+                        <InputText id="lineName"
+                                   @bind-Value="NewItem.Line"
+                                   class="form-control"
+                                   list="lineOptions"
+                                   autocomplete="off" />
+
+                        <datalist id="lineOptions">
+                            @foreach (var line in allAvailableLines)
+                            {
+                                <option value="@line" />
+                            }
+                        </datalist>
                         <ValidationMessage For="@(() => NewItem.Line)" />
                     </div>
+
+                    <div class="form-actions d-flex justify-content-center gap-4">
+                        <button type="button" class="btn btn-outline-secondary btn-lg me-2" @onclick="CancelForm">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-lg px-4">
+                            <i class="bi bi-plus-lg"></i> Authorize @(string.IsNullOrEmpty(NewItem.Line) ? "Line" : NewItem.Line) for @target.Name
+                        </button>
+                    </div>
                 </div>
+            </EditForm>
+            <ErrorDisplay ErrorMessage="@ErrorMessage" />
+        </div>
+    } else {
+        <div class="d-flex justify-content-center mb-3">
+            <button class="btn btn-success" @onclick="ShowForm">
+                <i class="bi bi-plus-lg"></i> Add New Line for @target.Name
+            </button>
+        </div>
+    }
 
-                <div class="form-actions d-flex justify-content-center gap-4">
-                    <button type="button" class="btn btn-outline-secondary btn-lg me-2" @onclick="CancelForm">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-lg px-4">
-                        <i class="bi bi-plus-lg"></i> Authorize for Associate
-                    </button>
-                </div>
-            </div>
-        </EditForm>
-        <ErrorDisplay ErrorMessage="@ErrorMessage" />
-    </div>
-} else {
-    <div class="d-flex justify-content-center mb-3">
-        <button class="btn btn-success" @onclick="ShowForm">
-            <i class="bi bi-plus-lg"></i> Add New Line for Associate
-        </button>
-    </div>
+    @if (DataView.Count > 0) {
+        <UniversalTable
+            T="AssocNameLine"
+            Items="DataView"
+            OnDelete="HandleDelete"
+        />
+    } else {
+        <div class="text-center">
+            <h3>No lines authorized for @target.Name</h3>
+        </div>
+    }
+
+    <DeleteDialog @ref="deleteDialog" />
 }
-
-@if (DataView.Count > 0) {
-    <UniversalTable
-        T="AssocNameLine"
-        Items="DataView"
-        OnDelete="HandleDelete"
-    />
-}
-
-<DeleteDialog @ref="deleteDialog" />
 
 @code {
+    [Parameter, EditorRequired] public Associate target { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private List<string?> allAvailableLines = [];
+
+    /// <summary>
+    /// When the page is initialized, create a cache of all available lines for the autofill
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        allAvailableLines = await context.CmmsToLineName
+            .Select(x => x.LineName)
+            .Where(x => !string.IsNullOrEmpty(x))
+            .Distinct()
+            .ToListAsync();
+
+        await base.OnInitializedAsync();
+    }
+
+    /// <summary>
+    /// Whenever the target associate changes, prime the add form object and force a refresh
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnParametersSetAsync(){
+        if (target == null)
+        {
+            DataView.Clear();
+            return;
+        }
+        ResetNewItem();
+        await LoadData();
+    }
+
+    /// <summary>
+    /// Creates a new object for the add form with the target associate number
+    /// </summary>
+    private void ResetNewItem(){
+        NewItem = new AssociateLine();
+        if (target != null){
+            NewItem.AssocNum = target.AssocNum;
+        }
+    }
+
+    /// <summary>
+    /// Filters the DataView to only show results for the targeted associate
+    /// </summary>
+    /// <param name="query">The query to which the filter should be applied</param>
+    /// <returns>An IQueryable with only table entries matching the target associate</returns>
+    protected override IQueryable<AssocNameLine> ApplyFilter(IQueryable<AssocNameLine> query)
+    {
+        if (target == null) return query.Where(x => false); // Return empty if no associate selected
+
+        // Filter the view by the selected associate number
+        return query.Where(x => x.AssocNum == target.AssocNum);
+    }
+
+    /// <summary>
+    /// Gets the AssociateLine object referred to by the input AssocNameLine and removes it from the DB
+    /// </summary>
+    /// <param name="context">The DB context to use for the check, removal, and save</param>
+    /// <param name="item">The AssocNameLine instance for which to delete the associated data</param>
+    /// <returns></returns>
     protected override async Task ExecuteDelete(AuthResetDbContext context, AssocNameLine item)
     {
         var toDelete = await context.AssociateToLine
             .FirstOrDefaultAsync(x => x.AssocNum == item.AssocNum && x.Line == item.Line);
-            
+
         if (toDelete != null)
         {
             context.AssociateToLine.Remove(toDelete);
             await context.SaveChangesAsync();
         }
+    }
+
+    /// <summary>
+    /// Because the user doesn't provide the associate number in the EditForm component,
+    /// we need to override the submitter to re-instantiate the object and force update the view so Blazor doesn't take shortcuts
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task HandleValidSubmit()
+    {
+        // Perform the base save logic (save new associate, call LoadData, hide associate addition form)
+        await base.HandleValidSubmit();
+
+        // Now prime the next form and inform Blazor to refresh the form binding
+        ResetNewItem();
+        StateHasChanged();
     }
 }
