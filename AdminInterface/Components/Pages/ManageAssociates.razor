@@ -1,5 +1,4 @@
-﻿@page "/manage-associates"
-@using AdminInterface
+﻿@using AdminInterface
 @inherits EntityManagerBase<Associate, Associate>
 
 <PageTitle>Manage Associates</PageTitle>
@@ -44,7 +43,7 @@
         <ErrorDisplay ErrorMessage="@ErrorMessage" />
     </div>
 } else {
-    @if (target == null){
+    @if (target == null && HandleExpand.HasDelegate){
         <h6 class="mb-2">Click the three lines next to an associate to see their authorized lines</h6>
     }
     <div class="row">
