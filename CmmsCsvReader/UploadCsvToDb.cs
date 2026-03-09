@@ -5,7 +5,7 @@ using CsvHelper.Configuration;
 using System.Globalization;
 using System.Data;
 
-namespace EL2AuthorizedReset;
+namespace CmmsCsvReader;
 public class Line
 {
     public int CmmsNum { get; set; }

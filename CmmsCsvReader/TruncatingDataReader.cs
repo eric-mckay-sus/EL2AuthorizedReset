@@ -1,6 +1,6 @@
 using System.Data;
 
-namespace EL2AuthorizedReset;
+namespace CmmsCsvReader;
 /// <summary>
 /// IDataReader wrapper that trims/shortens string values on the fly.
 /// Any column whose name is specified in the constructor will be truncated
