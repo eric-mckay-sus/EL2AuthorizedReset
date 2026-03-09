@@ -54,6 +54,6 @@ Tables
   - Ideally would FK to associate-line, but this would cause issues with managing machine locations
     - e.g. machine with CMMS 7 moves from F6 to F25. Trying to simply add row 7-F25 would fail by PK violation, checking to replace would be too slow
 - CMMS number to line name
-- Historical (timestamp, associate number, CMMS number, line name, and whether authorized)
+- Historical (timestamp, associate name, associate number, CMMS number, line name, and whether authorized)
 
 No foreign keying for historical, and ideally some way of connecting locks to their unlocks, be able to trace long locks and potential machine operating around lock.
