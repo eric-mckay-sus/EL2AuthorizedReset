@@ -1,5 +1,5 @@
 @page "/import-cmms-mappings"
-@using EL2AuthorizedReset
+@using CmmsCsvReader = CmmsCsvReader.UploadCsvToDb
 @inherits EntityManagerBase<CmmsLine, CmmsLine>
 @inject IWebHostEnvironment Environment
 @inject IConfiguration Config
@@ -59,7 +59,7 @@
                     uploadStatus += msg;
                     StateHasChanged(); // Refresh UI to show "Parsing...", "Connected!", etc.
                 });
-                await UploadCsvToDb.Upload(filePath, conn, blazorProgress);
+                await CmmsCsvReader.Upload(filePath, conn, blazorProgress);
                 uploadStatus += $"\n'{file.Name}' successfully uploaded.";
                 File.Delete(filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
                 await LoadData();
