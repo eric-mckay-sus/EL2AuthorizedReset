@@ -9,7 +9,7 @@ a, .btn-link {
 /* Used by the delete button */
 .btn-link:hover {
     transform: scale(1.1);
-    transition: ease 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out;
     color: hsl(354, 80%, 60%); /* Ensures it stays red on hover */
 }
 
@@ -94,7 +94,7 @@ h1:focus {
 
 /* Professional Table Formatting */
 .res-table {
-    min-width: 1200px; 
+    min-width: 600px; 
     width: 100%;
     border-collapse: separate; /* Required for sticky headers to work correctly */
     border-spacing: 0;
@@ -259,4 +259,25 @@ h1:focus {
     white-space: pre-wrap;
     max-height: 200px;
     overflow-y: auto;
+}
+
+.bordered-right {
+    border-right: 1px solid #cccccc; /* Customize color and thickness */
+    min-height: 1em; /* Ensure it has some height */
+}
+
+.transition-width {
+    transition: flex 0.3s ease-in-out, 
+                max-width 0.3s ease-in-out, 
+                width 0.3s ease-in-out;
+    
+    /* Ensure the element doesn't snap to content size during the move */
+    flex-shrink: 0; 
+    flex-grow: 0;
+}
+
+.clear-addon {
+    background-color: white !important;
+    border-left: none !important;
+    padding-right: 15px;
 }
