@@ -3,6 +3,17 @@ using DotNetEnv;
 
 namespace EL2AuthorizedReset;
 /// <summary>
+/// A DTO containing the information to log for a reset attempt
+/// </summary>
+record ResetAttempt(
+    int AssociateNum,
+    string AssociateName,
+    int CmmsNum,
+    string LineName,
+    bool IsAuthorized
+);
+
+/// <summary>
 /// Authorize and log a reset based on the permissions stored in the DB
 /// </summary>
 class AuthorizeReset
@@ -33,82 +44,81 @@ class AuthorizeReset
             TrustServerCertificate = true //TODO insecure, eventually require certificate verification
         };
         using SqlConnection conn = new(builder.ConnectionString);
-        bool isAuthorized = Authorize(badgeNum, cmmsNum, conn);
-        LogResetAttempt(badgeNum, cmmsNum, isAuthorized, conn);
+        conn.Open();
+        ResetAttempt? attempt = Authorize(badgeNum, cmmsNum, conn);
+        if (attempt != null)
+        {
+            LogResetAttempt(attempt, conn);
+            Console.WriteLine($"Authorized: {attempt.IsAuthorized}");
+        } else
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Error.WriteLine("ERROR: Invalid Badge or CMMS number.");
+        }
     }
 
     /// <summary>
-    /// Authorize a badge swipe to release a certain machine.
-    /// Effectively, this just counts the entries in the associate-line relationship
-    /// where the associate number and badge name match
+    /// Authorize a badge swipe to release a certain machine and collects the request data
     /// </summary>
     /// <param name="badgeNum">The badge number read from the badge reader</param>
     /// <param name="cmmsNum">The machine's CMMS number</param>
     /// <param name="conn">The open SQL connection</param>
-    /// <returns>Whether the swipe was authorized</returns>
-    private static bool Authorize(int badgeNum, int cmmsNum, SqlConnection conn)
+    /// <returns>Null if badge/CMMS does not exist,
+    /// otherwise a ResetAttempt record containing associate name, number, CMMS, line name, and whether the request was authorized
+    /// </returns>
+    private static ResetAttempt? Authorize(int badgeNum, int cmmsNum, SqlConnection conn)
     {
         // 1. Lookup associate by badge (PK on badgeNum - fast)
-        // 2. Get lines for that associate (indexed on associateNum)
-        // 3. Check if CMMS maps to one of those lines (indexed on lineName)
+        // 2. Check if CMMS maps to one of those lines (indexed on lineName)
+        // 3. Get lines for that associate (indexed on associateNum)
         string sql = @"
-        SELECT COUNT(*)
+        SELECT TOP 1 a.associateNum, a.associateName, ctl.lineName,
+        CAST(CASE WHEN atl.associateNum IS NOT NULL THEN 1 ELSE 0 END AS BIT) as IsAuthorized
         FROM AssociateInfo a
-        INNER JOIN AssociateToLine atl ON a.associateNum = atl.associateNum
-        INNER JOIN CmmsToLineName ctl ON atl.lineName = ctl.lineName
-        WHERE a.badgeNum = @badge AND ctl.cmmsNum = @cmms";
+        INNER JOIN CmmsToLineName ctl ON ctl.cmmsNum = @cmms
+        LEFT JOIN AssociateToLine atl ON a.associateNum = atl.associateNum AND ctl.lineName = atl.lineName
+        WHERE a.badgeNum = @badge";
 
         using SqlCommand cmd = new(sql, conn);
         cmd.Parameters.AddWithValue("@badge", badgeNum);
         cmd.Parameters.AddWithValue("@cmms", cmmsNum);
 
-        if (conn.State != System.Data.ConnectionState.Open) conn.Open();
-
-        int count = (int)cmd.ExecuteScalar();
-        return count > 0;
+        // Set up a reader to build a record from the returned data
+        using SqlDataReader reader = cmd.ExecuteReader();
+        if (reader.Read())
+        {
+            return new ResetAttempt(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                cmmsNum,
+                reader.GetString(2),
+                reader.GetBoolean(3)
+            );
+        }
+        return null; // the badge or CMMS doesn't exist
     }
 
     /// <summary>
     /// Logs an attempted reset in the historical database
     /// </summary>
-    /// <param name="badgeNum">The badge number from which to get the associate name and number</param>
-    /// <param name="cmmsNum">The CMMS number to record and from which to get line name</param>
-    /// <param name="isAuthorized">Whether the access attempt was authorized</param>
+    /// <param name="attempt">The ResetAttempt record to log</param>
     /// <param name="conn">The open SQL connection</param>
-    private static void LogResetAttempt(int badgeNum, int cmmsNum, bool isAuthorized, SqlConnection conn)
+    private static void LogResetAttempt(ResetAttempt attempt, SqlConnection conn)
     {
-        // Select and insert in one go to reduce overhead, craft inner join to avoid combinatoric explosion
+        // Authorize already did the heavy lifting of getting the data to insert
         string sql = @"
             INSERT INTO Historical (requestTime, associateNum, associateName, cmmsNum, lineName, isAuthorized)
-            SELECT 
-                GETDATE(), 
-                a.associateNum, 
-                a.associateName, 
-                c.cmmsNum, 
-                c.lineName, 
-                @isAuth
-            FROM AssociateInfo a
-            INNER JOIN CmmsToLineName c ON c.cmmsNum = @cmms
-            WHERE a.badgeNum = @badge";
+            VALUES (GETDATE(), @aNum, @aName, @cmms, @line, @isAuth)";
 
         using SqlCommand cmd = new(sql, conn);
-        cmd.Parameters.AddWithValue("@badge", badgeNum);
-        cmd.Parameters.AddWithValue("@cmms", cmmsNum);
-        cmd.Parameters.AddWithValue("@isAuth", isAuthorized);
 
-        if (conn.State != System.Data.ConnectionState.Open) conn.Open();
-        int rows = cmd.ExecuteNonQuery();
+        // Get the parameters for the SQL statement from the DTO
+        cmd.Parameters.AddWithValue("@aNum", attempt.AssociateNum);
+        cmd.Parameters.AddWithValue("@aName", attempt.AssociateName);
+        cmd.Parameters.AddWithValue("@cmms", attempt.CmmsNum);
+        cmd.Parameters.AddWithValue("@line", attempt.LineName);
+        cmd.Parameters.AddWithValue("@isAuth", attempt.IsAuthorized);
 
-        if (rows == 0)
-        {
-            // Handle case where badge/CMMS doesn't exist in the system at all
-            // Hopefully won't happen if CMMS mappings are updated when they change and 
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Error.WriteLine("Log failed: Invalid Badge or CMMS number.");
-            Console.ResetColor();
-        }
-
-        // Remove this later
-        Console.WriteLine($"Attempted access at {DateTime.Now}: Badge {badgeNum} for CMMS {cmmsNum} ({(isAuthorized ? "authorized" : "not authorized")})");
+        cmd.ExecuteNonQuery();
     }
 }
