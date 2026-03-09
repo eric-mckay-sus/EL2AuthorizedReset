@@ -21,12 +21,22 @@ Access should be restricted by some other authentication (i.e. Windows login, ne
   - Could add interface to admin page
   - File upload, when file detected, show warning
 - **Associate Management:** Add/remove associates from DB
-  - Prominent *add* button at top
-  - Search bar (reuse from line management page)
-  - List associates, remove button for each (with delete dialog)
 - **Line Management:** Add/remove lines by associate
-  - Search by name/associate number
-  - Show all matching results, maybe split screen on selection to simultaneously show list and selected associate info?
+
+Unified Management page
+---------
+
+- Associate management: only search for browse/remove (not add)
+  - Prominent *add* button at top
+  - Search bar (support name/associate number)
+  - List associates, remove button for each (with delete dialog)
+- Line management: Autofill for add AND search for browse/remove
+  - Access enclosed in 'more' button on associate management page
+    - Join of all lines for that associate (separate table in split screen)
+    - One greater page holding the two lesser components
+  - Add field with autofill for line name
+    - Targeted associate implied by selection on left side
+  - X to close lines section
 
 Multiplicities
 ---------
