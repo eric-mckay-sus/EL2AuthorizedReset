@@ -60,6 +60,11 @@ public class Associate
     /// </summary>
     /// <returns>The associate's hash code</returns>
     public override int GetHashCode() => BadgeNum.GetHashCode();
+
+    public override string ToString()
+    {
+        return $"Name: {Name}, Assoc #: {AssocNum}, Badge #: {BadgeNum}";
+    }
 }
 
 /// <summary>
