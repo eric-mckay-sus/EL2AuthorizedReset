@@ -73,7 +73,7 @@
 @code {
     [Parameter, EditorRequired] public Associate target { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    private List<string> allAvailableLines = [];
+    private List<string?> allAvailableLines = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -93,10 +93,12 @@
     /// </summary>
     /// <returns></returns>
     protected override async Task OnParametersSetAsync(){
-        if (target != null)
+        if (target == null)
         {
-            NewItem.AssocNum = target.AssocNum;
+            DataView.Clear();
+            return;
         }
+        NewItem.AssocNum = target.AssocNum;
         await LoadData();
     }
 

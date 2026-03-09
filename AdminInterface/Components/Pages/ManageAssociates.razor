@@ -62,8 +62,7 @@
                                     style="font-size: 0.8rem;"></button>
                             </span>
                         }
-                    <button type="submit" class="btn btn-primary px-4 d-flex align-items-center"
-                        @onclick="async () => await LoadData()">
+                    <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
                     <i class="bi bi-arrow-right" style="font-size: 1.5rem;"></i></button>
                 </div>
             </EditForm>
@@ -79,9 +78,9 @@
 
 @if (DataView.Count > 0) {
     @if (HandleExpand.HasDelegate){
-        <UniversalTable T="Associate" Items="DataView" OnDelete="HandleDelete" OnExpand="HandleExpand" />
+        <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" OnExpand="HandleExpand" />
     } else {
-        <UniversalTable T="Associate" Items="DataView" OnDelete="HandleDelete" />
+        <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" />
     }
 } else {
     <h3>No associates matched search criteria @searchText</h3>
@@ -92,7 +91,7 @@
 @code{
     private string searchText = "";
     [Parameter] public EventCallback<Associate> HandleExpand { get; set; }
-    [Parameter] public Associate target { get; set; }
+    [Parameter] public Associate? target { get; set; }
 
     /// <summary>
     /// Loads data, then ensures there's no results being displayed for lines connected to the now-hiding associate
@@ -102,12 +101,11 @@
     {
         await base.LoadData();
 
-        if (!DataView.Contains(target) && !string.IsNullOrEmpty(searchText))
+        if (target != null && !DataView.Contains(target) && !string.IsNullOrEmpty(searchText))
         {
-            // Reuse OnItemDeleted to close the targeted associate lines view
-            if (OnItemDeleted.HasDelegate)
+            if (OnItemChanged.HasDelegate)
             {
-                await OnItemDeleted.InvokeAsync(new Associate()); 
+                await OnItemChanged.InvokeAsync(target); 
             }
         }
     }

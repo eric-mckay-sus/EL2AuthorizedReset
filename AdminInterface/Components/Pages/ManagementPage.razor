@@ -6,7 +6,7 @@
 <div class="row overflow-hidden flex-nowrap">
     @* Split screen gives the associate table half screen, otherwise fullscreen *@
     <div class="@(isTargeting ? "col-7" : "col-12") transition-width">
-        <ManageAssociates target="targeted" HandleExpand="HandleExpand" OnItemDeleted="HandleAssociateDeleted"/>
+        <ManageAssociates target="targeted" HandleExpand="HandleExpand" OnItemChanged="HandleAssociateNotShown"/>
     </div>
     <div class="@(isTargeting ? "col-5" : "col-0") transition-width overflow-hidden" 
          style="@(isTargeting ? "" : "display:none;")">
@@ -28,10 +28,9 @@
         isTargeting = false;
     }
 
-    private void HandleAssociateDeleted(Associate deletedAssociate)
+    private void HandleAssociateNotShown(Associate changedAssociate)
     {
-        // If the associate currently being managed was the one just deleted
-        if (targeted != null && deletedAssociate.Equals(targeted))
+        if (targeted != null && changedAssociate.Equals(targeted))
         {
             HandleClose();
         }

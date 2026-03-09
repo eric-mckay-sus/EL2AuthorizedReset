@@ -19,7 +19,7 @@
             </thead>
             <tbody>
                 <Virtualize TItem="T" Items="@(Items?.ToList())" Context="item" OverscanCount="10">
-                    <tr @key="GetKey(item)">
+                    <tr @key="GetKey(item)" class="@(item?.Equals(target) == true ? "table-primary" : "")">
                         @foreach (var prop in _cachedProps)
                         {
                             <td>@(prop.GetValue(item)?.ToString() ?? "—")</td>
@@ -48,10 +48,11 @@
 </div>
 
 @code {
-    [Parameter] public IEnumerable<T>? Items { get; set; }
-    [Parameter] public EventCallback<T> OnDelete { get; set; }
-    [Parameter] public EventCallback<T> OnExpand { get; set; }
-    [Parameter] public Func<T, object>? KeySelector { get; set; }
-    private PropertyInfo[] _cachedProps = typeof(T).GetProperties();
-    private object GetKey(T item) => KeySelector?.Invoke(item) ?? item!;
+    [Parameter] public IEnumerable<T>? Items { get; set; } // The data to display
+    [Parameter] public EventCallback<T> OnDelete { get; set; } // The action to bind to the delete button being pressed
+    [Parameter] public EventCallback<T> OnExpand { get; set; } // The action to bind to the expand button being pressed
+    [Parameter] public Func<T, object>? KeySelector { get; set; } // The mapping of how to get the key for T
+    [Parameter] public T? target { get; set; } // The row to highlight
+    private PropertyInfo[] _cachedProps = typeof(T).GetProperties(); // A cache of the properties of T so it's not invoked for each header 
+    private object GetKey(T item) => KeySelector?.Invoke(item) ?? item!; // When asked to get the key, try to use the key selector, but if there isn't one, use the object itself
 }
