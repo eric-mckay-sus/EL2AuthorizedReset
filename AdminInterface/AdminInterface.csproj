@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EL2AuthorizedReset\EL2AuthorizedReset.csproj" />
+    <ProjectReference Include="..\CsvReader\CsvReader.csproj" />
   </ItemGroup>
 
 </Project>
