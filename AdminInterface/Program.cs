@@ -10,25 +10,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddAuthentication("CustomAutoAuth")
-    .AddCookie("CustomAutoAuth", options =>
-    {
-        options.LoginPath = "/"; // If not logged in at all, go here
-        options.AccessDeniedPath = "/"; // If logged in but not Admin, go here
-        
-        // This prevents the Blazor default redirect to /Account/Login
-        options.Events.OnRedirectToLogin = context =>
-        {
-            context.Response.Redirect("/?error=unauthorized");
-            return Task.CompletedTask;
-        };
-        options.Events.OnRedirectToAccessDenied = context =>
-        {
-            context.Response.Redirect("/?error=forbidden");
-            return Task.CompletedTask;
-        };
-    });
-    
+// Add custom auto-authentication handler
+builder.Services.AddAuthentication("AutoAuth")
+    .AddAutoAuthentication();
+
 builder.Services.AddAuthenticationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, AutoAuthStateProvider>();
@@ -52,6 +37,23 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+app.UseStatusCodePages(async statusCodeContext =>
+{
+    var response = statusCodeContext.HttpContext.Response;
+    var user = statusCodeContext.HttpContext.User;
+
+    if (response.StatusCode == StatusCodes.Status401Unauthorized)
+    {
+        response.ContentType = "text/html; charset=utf-8";
+        await response.WriteAsync(AuthorizationMiddleware.GetUnauthorizedHtml());
+    }
+    else if (response.StatusCode == StatusCodes.Status403Forbidden)
+    {
+        response.ContentType = "text/html; charset=utf-8";
+        await response.WriteAsync(AuthorizationMiddleware.GetForbiddenHtml(user));
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
