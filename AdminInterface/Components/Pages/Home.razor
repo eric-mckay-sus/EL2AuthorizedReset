@@ -1,9 +1,27 @@
 ﻿@page "/"
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @inherits EntityManagerBase<Reset, Reset>
+@inject NavigationManager Nav
 
 <PageTitle>Home</PageTitle>
+
+@if (ShowAuthError)
+{
+    <div class="alert alert-danger shadow-sm mb-4 animate-fade-in">
+        <Icon Name="IconName.ShieldLockFill" class="me-2" />
+        <strong>Access Restricted:</strong> 
+        @(ErrorMessageSnippet ?? "You do not have permission to access that area.")
+    </div>
+}
 
 <h1>Historical Resets</h1>
 
 @* Pretty basic for now, might add filters later, but DataView is already perfectly inherited via EntityManagerBase *@
 <UniversalTable T="Reset" Items="DataView" />
+
+@code {
+    private bool ShowAuthError => Nav.Uri.Contains("error=");
+    private string? ErrorMessageSnippet => Nav.Uri.Contains("unauthorized") 
+        ? "Your account was not found in the system." 
+        : "Admin privileges are required for that page.";
+}
