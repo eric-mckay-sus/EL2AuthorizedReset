@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AdminInterface;
 
+/// <summary>
+/// Verifies that an associate's badge number is unique
+/// </summary>
 public class UniqueBadgeNumberAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
@@ -20,6 +23,9 @@ public class UniqueBadgeNumberAttribute : ValidationAttribute
     }
 }
 
+/// <summary>
+/// Verify that an associate's associate number is unique
+/// </summary>
 public class UniqueAssociateNumberAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
@@ -37,6 +43,9 @@ public class UniqueAssociateNumberAttribute : ValidationAttribute
     }
 }
 
+/// <summary>
+/// Verify that a an associate exists in AssociateInfo
+/// </summary>
 public class ValidateAssociateExistsAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
@@ -54,6 +63,9 @@ public class ValidateAssociateExistsAttribute : ValidationAttribute
     }
 }
 
+/// <summary>
+/// Verify that a line exists in CmmsToLineName
+/// </summary>
 public class ValidateLineExistsAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
@@ -71,6 +83,9 @@ public class ValidateLineExistsAttribute : ValidationAttribute
     }
 }
 
+/// <summary>
+/// Verify that a target associate and line are not already linked
+/// </summary>
 public class ValidateLineAssignedToAssociateAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
@@ -86,4 +101,12 @@ public class ValidateLineAssignedToAssociateAttribute : ValidationAttribute
 
         return ValidationResult.Success;
     }
+}
+
+/// <summary>
+/// Marks a property that should not be displayed in UniversalTable
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public class NotDisplayedAttribute : Attribute
+{
 }
