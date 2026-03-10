@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using AdminInterface.Components.Pages;
+using System.Linq.Dynamic.Core;
 
 namespace AdminInterface;
 
@@ -21,6 +22,9 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     protected string? ErrorMessage; // The error message for uniqueness constraint, if applicable
     protected DeleteDialog deleteDialog = default!; // The dialog to show upon pressing the delete button for a row
     protected bool IsFormVisible = false; // Whether to show or hide the add form
+    // For sorting
+    public string CurrentSortColumn { get; set; } = ""; // The name of the column that results are currently being sorted by
+    public string SortDir { get; set; } = "none"; // The sort direction of the currently sorted column
 
     /// <summary>
     /// When the page loads, prepare the table
@@ -42,14 +46,17 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
         // Apply filter(s) set by the child
         query = ApplyFilter(query);
 
+        query = ApplySorting(query);
+
         // Execute here (DataView requires a list for display)
         DataView = await query.ToListAsync();
+        StateHasChanged();
     }
 
     /// <summary>
     /// Override this in child components to provide specific filtering logic.
     /// </summary>
-    /// <param name="query">The IQueryable implementation to which the query should be applied</param>
+    /// <param name="query">The IQueryable implementation to which the filters should be applied</param>
     /// <returns>The query, filtered by whatever filter(s) applied by the child</returns>
     protected virtual IQueryable<TRead> ApplyFilter(IQueryable<TRead> query) => query;
 
@@ -137,5 +144,50 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
 
             await LoadData();
         }
+    }
+
+    /// <summary>
+    /// Cycles through sort directions when column is toggled
+    /// Cycle order: None -> Asc -> Desc
+    /// </summary>
+    /// <param name="columnName">The column to be toggled</param>
+    /// <returns></returns>
+    public async Task ToggleSort(string columnName)
+    {
+        if (CurrentSortColumn != columnName) { // If coming from none, save the column name (it's changed) and switch to asc
+            CurrentSortColumn = columnName;
+            SortDir = "ascending";
+        } else if(SortDir == "ascending") { // If coming from asc, only need to switch to desc
+            SortDir = "descending";
+        } else { // If coming from desc, switch to none and inform model no column is specified to sort
+            SortDir = "none";
+            CurrentSortColumn = "";
+        }
+        await LoadData(); // because the sort parameters change we want a guaranteed refresh
+    }
+
+    /// <summary>
+    /// Uses dynamic LINQ to draft a SQL ORDER BY based on the current sort
+    /// </summary>
+    /// <param name="query">The query to which the sorts should be appended</param>
+    /// <returns>An IQueryable object with sorts applied</returns>
+    public IQueryable<TRead> ApplySorting(IQueryable<TRead> query)
+    {
+        if (SortDir == "none" || string.IsNullOrWhiteSpace(CurrentSortColumn))
+        {
+            return query;
+        }
+        return query.OrderBy($"{CurrentSortColumn} {SortDir}");
+    }
+
+    /// <summary>
+    /// Helper to render the arrow
+    /// </summary>
+    /// <param name="columnName">The column for which to update the sort icon</param>
+    /// <returns>The Unicode arrow representing the sort direction</returns>
+    public string GetSortIcon(string columnName)
+    {
+        if (CurrentSortColumn != columnName || SortDir == "none") return "↕";
+        return SortDir == "ascending" ? "▲" : "▼";
     }
 }

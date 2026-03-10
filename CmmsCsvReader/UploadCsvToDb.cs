@@ -72,7 +72,12 @@ public class UploadCsvToDb
         // Called as a conditional Console.Write
         void report(string msg) => progress?.Report(msg);
 
-        report("Parsing...");
+        if(!Path.GetExtension(filepath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            report("The file you provided is not a CSV. Please ensure the input file is of the correct filetype and format, then try again");
+            return;
+        }
+
         // The layers of wrapping are kind of disgusting, but we need an open StreamReader to create a CsvReader
         // The CsvReader gives us access to CsvDataReader to stream from the table (to the SqlBulkCopy)
         // Finally, we can use our custom TruncatingDataReader to enforce the 8-character limit while streaming from the CsvDataReader
@@ -86,7 +91,7 @@ public class UploadCsvToDb
             ["Location"] = 8
         };
         using IDataReader trunc = new TruncatingDataReader(dr, maxLengths);
-        report("Complete!\n");
+        // The above section is very fast because it doesn't actually do any parsing, so it doesn't make sense to report.
 
         report("Connecting...");
         using SqlConnection connection = new(connectionString);
@@ -113,7 +118,6 @@ public class UploadCsvToDb
 
             transaction.Commit();
             report("Complete!\n");
-            await Task.Delay(500); // So further async actions don't race
         }
         catch (Exception ex)
         {
