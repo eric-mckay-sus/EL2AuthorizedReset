@@ -8,29 +8,21 @@
         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
             
             <NotAuthorized>
-                @{
-                    // Check if the user is actually "logged in" (has a name) 
-                    // but just lacks the role.
-                    var user = context.User;
-                    if (user.Identity is { IsAuthenticated: true })
-                    {
-                        // Redirect them to home with the forbidden flag
-                        Navigation.NavigateTo("/?error=forbidden");
-                    }
-                    else
-                    {
-                        @* This part is for people NOT in the DB at all. 
-                           They stay on this page and see the warning.
-                        *@
-                        <div class="container mt-5">
-                            <div class="alert alert-warning border-start border-4 shadow-sm">
-                                <h4 class="alert-heading">Access Denied</h4>
-                                <p>Associate #@Environment.UserName[^4..] not found in Authorization table.</p>
-                            </div>
-                        </div>
-                    }
+            @{
+                var user = context.User;
+                if (user.Identity is { IsAuthenticated: true })
+                {
+                    // This forces the browser to do a full reload to the current URL,
+                    // which triggers the Middleware/StatusCodePages logic for a 403.
+                    Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
                 }
-            </NotAuthorized>
+                else
+                {
+                    // Same for 401.
+                    Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+                }
+            }
+        </NotAuthorized>
 
             @* This is shown while the AutoAuthStateProvider is hitting the DB *@
             <Authorizing>
