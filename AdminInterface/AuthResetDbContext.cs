@@ -130,24 +130,28 @@ public class CmmsLine
 /// Represents one row of Historical in the DB
 /// NOTE: VERY SENSITIVE TO COL NAME CHANGES
 /// </summary>
-[PrimaryKey(nameof(Timestamp))]
+[PrimaryKey(nameof(Id))]
 public class Reset
 {
+    [Column("historyId")]
+    [NotDisplayed]
+    public int Id { get; set; }
+
     [Column("requestTime")]
-    public DateTime? Timestamp { get; }
+    public DateTime? Timestamp { get; set; }
 
     [Column("associateNum")]
-    public int? AssocNum { get; }
+    public int? AssocNum { get; set; }
 
     [Column("associateName")]
-    public string? AssocName { get; }
+    public string? AssocName { get; set; }
 
     [Column("cmmsNum")]
-    public int? CmmsNum { get; }
+    public int? CmmsNum { get; set; }
 
     [Column("lineName")]
-    public string? LineName { get; }
+    public string? LineName { get; set; }
 
     [Column("isAuthorized")]
-    public bool? IsAuthorized { get; }
+    public bool? IsAuthorized { get; set; }
 }

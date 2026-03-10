@@ -53,6 +53,6 @@
     [Parameter] public EventCallback<T> OnExpand { get; set; } // The action to bind to the expand button being pressed
     [Parameter] public Func<T, object>? KeySelector { get; set; } // The mapping of how to get the key for T
     [Parameter] public T? target { get; set; } // The row to highlight
-    private PropertyInfo[] _cachedProps = typeof(T).GetProperties(); // A cache of the properties of T so it's not invoked for each header 
+    private PropertyInfo[] _cachedProps = typeof(T).GetProperties().Where(p => p.GetCustomAttribute<NotDisplayedAttribute>() == null).ToArray(); // A cache of the properties of T so it's not invoked for each header, excluding those marked NotDisplayed
     private object GetKey(T item) => KeySelector?.Invoke(item) ?? item!; // When asked to get the key, try to use the key selector, but if there isn't one, use the object itself
 }
