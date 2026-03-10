@@ -10,7 +10,10 @@
                     @foreach (var prop in _cachedProps)
                     {
                         var attribute = prop.GetCustomAttribute<ColumnAttribute>();
-                        <th>@(attribute?.Name ?? prop.Name)</th>
+                        var displayName = attribute?.Name ?? prop.Name;
+                        <th @onclick="() => OnSort.InvokeAsync(prop.Name)" style="cursor:pointer">
+                            @displayName @SortIcon(prop.Name)
+                        </th>
                     }
                      @if (OnDelete.HasDelegate || OnExpand.HasDelegate){
                         <th>Actions</th> @* For the delete button, plus probably an edit button if/when that is added later *@
@@ -55,4 +58,7 @@
     [Parameter] public T? target { get; set; } // The row to highlight
     private PropertyInfo[] _cachedProps = typeof(T).GetProperties().Where(p => p.GetCustomAttribute<NotDisplayedAttribute>() == null).ToArray(); // A cache of the properties of T so it's not invoked for each header, excluding those marked NotDisplayed
     private object GetKey(T item) => KeySelector?.Invoke(item) ?? item!; // When asked to get the key, try to use the key selector, but if there isn't one, use the object itself
+    [Parameter] public EventCallback<string> OnSort { get; set; } // Handles everything related to sorting
+    [Parameter] public Func<string, string> GetSortIcon { get; set; } = (col) => "";
+    private string SortIcon(string col) => GetSortIcon?.Invoke(col) ?? "";
 }

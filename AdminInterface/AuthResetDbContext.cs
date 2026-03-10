@@ -154,4 +154,9 @@ public class Reset
 
     [Column("isAuthorized")]
     public bool? IsAuthorized { get; set; }
+
+    public override string ToString()
+    {
+        return $"Associate #{AssocNum} reset {CmmsNum} at {Timestamp}";
+    }
 }
