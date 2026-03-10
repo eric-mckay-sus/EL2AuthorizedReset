@@ -1,6 +1,7 @@
 using AdminInterface.Components;
 using Microsoft.EntityFrameworkCore;
 using AdminInterface;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,29 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+builder.Services.AddAuthentication("CustomAutoAuth")
+    .AddCookie("CustomAutoAuth", options =>
+    {
+        options.LoginPath = "/"; // If not logged in at all, go here
+        options.AccessDeniedPath = "/"; // If logged in but not Admin, go here
+        
+        // This prevents the Blazor default redirect to /Account/Login
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.Redirect("/?error=unauthorized");
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.Redirect("/?error=forbidden");
+            return Task.CompletedTask;
+        };
+    });
+    
+builder.Services.AddAuthenticationCore();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<AuthenticationStateProvider, AutoAuthStateProvider>();
 
 builder.Services.AddBlazorBootstrap();
 
@@ -28,6 +52,9 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

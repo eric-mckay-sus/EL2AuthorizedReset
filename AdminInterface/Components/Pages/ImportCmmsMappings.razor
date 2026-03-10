@@ -3,6 +3,7 @@
 @inherits EntityManagerBase<CmmsLine, CmmsLine>
 @inject IWebHostEnvironment Environment
 @inject IConfiguration Config
+@attribute [Authorize(Roles = "Admin")]
 
 <h1>Update CMMS Mappings</h1>
 
