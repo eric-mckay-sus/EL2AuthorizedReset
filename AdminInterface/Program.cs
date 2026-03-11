@@ -5,17 +5,18 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection"); // from appsettings.json, no idea how this looks in production
-
+// Database Configuration
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<IUserIdentityService, UserIdentityService>();
 
-// Add custom auto-authentication handler
+// Authentication & Authorization
 builder.Services.AddAuthentication("AutoAuth")
     .AddAutoAuthentication();
 
+builder.Services.AddAuthorization(); // Required for attribute-based security
 builder.Services.AddAuthenticationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, AutoAuthStateProvider>();
@@ -38,22 +39,13 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+
+/* --- STATUS CODE HANDLING --- */
+// This tells the server: "If you see a 401 or 403, don't tell the browser yet. 
+// Re-run the pipeline at the root path so Blazor can load and handle it."
+app.UseStatusCodePagesWithReExecute("/"); 
+
 app.UseAntiforgery();
-
-app.UseStatusCodePages(async context =>
-{
-    var response = context.HttpContext.Response;
-
-    if (response.StatusCode == StatusCodes.Status401Unauthorized)
-    {
-        context.HttpContext.Response.Redirect("/unauthorized");
-    }
-    else if (response.StatusCode == StatusCodes.Status403Forbidden)
-    {
-        context.HttpContext.Response.Redirect("/forbidden");
-    }
-    await Task.CompletedTask;
-});
 
 app.UseAuthentication();
 app.UseAuthorization();
