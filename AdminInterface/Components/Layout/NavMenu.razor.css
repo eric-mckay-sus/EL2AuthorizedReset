@@ -26,23 +26,27 @@ body {
 
 .navbar-brand {
     margin-left: 0;
-    font-size: 1.3rem;
-}
-
-.bi {
-    display: inline-block;
-    position: relative;
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-right: 0.75rem;
-    top: -1px;
-    background-size: cover;
+    padding-top: 0;
+    font-size: 1.5rem;
 }
 
 .nav-item {
-    font-size: 1rem;
+    font-size: 1.1rem;
     padding-bottom: 0.5rem;
+    padding-left: 0.5rem
 }
+
+    /* Target icons inside a nav-item */
+    .nav-item ::deep .bi, 
+    .nav-item ::deep i {
+        font-size: 1.5rem; /* Icons scale with font size */
+        width: 1.5rem;
+        height: 1.5rem;
+        display: flex;       /* Forces the icon container to center its own SVG */
+        align-items: center; 
+        margin-top: 0;       /* Removes any inherited Bootstrap offsets */
+        top: 0;              /* Resets any relative positioning */
+    }
 
     .nav-item:first-of-type {
         padding-top: 1rem;
@@ -57,9 +61,10 @@ body {
         background: none;
         border: none;
         border-radius: 4px;
-        height: 3rem;
+        display: flex;
+        height: 3.5rem;
+        gap: 1rem;
         align-items: center;
-        text-align: left;           /* Change to left for standard look */
         padding: 0 1.5rem;          /* Adds 1.5rem padding to Left and Right */
         width: 100%;
         transition: background-color 0.2s;

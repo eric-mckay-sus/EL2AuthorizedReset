@@ -10,22 +10,22 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
-        <div class="nav-item ps-2">
-            <NavLink class="nav-link d-flex justify-content-end" href="" Match="NavLinkMatch.All">
-                <span aria-hidden="true"></span> Historical
+        <div class="nav-item">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <Icon Name="IconName.Clock" /> Historical
             </NavLink>
         </div>
 
         <AuthorizeView Roles="Admin">
             <Authorized>
-                <div class="nav-item ps-2">
-                    <NavLink class="nav-link d-flex justify-content-end" href="manage">
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="manage">
                         <Icon Name="IconName.PeopleFill" /> Manage Associates & Lines
                     </NavLink>
                 </div>
                 
-                <div class="nav-item ps-2">
-                    <NavLink class="nav-link d-flex justify-content-end" href="import-cmms-mappings" Match="NavLinkMatch.All">
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="import-cmms-mappings" Match="NavLinkMatch.All">
                         <Icon Name="IconName.CloudArrowUpFill" /> Update CMMS
                     </NavLink>
                 </div>
@@ -33,4 +33,3 @@
         </AuthorizeView>
     </nav>
 </div>
-
