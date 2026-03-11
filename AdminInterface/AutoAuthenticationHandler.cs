@@ -14,16 +14,20 @@ public class AutoAuthenticationHandler(
     IDbContextFactory<AuthResetDbContext> dbFactory) : AuthenticationHandler<AutoAuthenticationOptions>(options, logger, encoder, clock)
 {
     private readonly IDbContextFactory<AuthResetDbContext> _dbFactory = dbFactory;
+    private static readonly string[] stanleyPrefixes = ["SUSU", "SUSD"]; // The prefixes to strip from the username to get associate number. FIRST MATCH IS USED (e.g. if SUS is needed, add it AFTER everything longer that includes SUS)
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         try
         {
-            // Get system name (e.g., "CORP\JDoe1234")
-            string fullUserName = Environment.UserName;
-
+            // Get Windows username (e.g. SUSU4502, SUSD2946)
+            string associateString = Environment.UserName;
+            
+            // Try each prefix, matching the first
+            foreach(string prefix in stanleyPrefixes) associateString = associateString.Replace(prefix, "");
+            
             // Extract last 4 digits as associate number
-            if (fullUserName.Length >= 4 && int.TryParse(fullUserName[^4..], out int assocNum))
+            if (int.TryParse(associateString, out int assocNum))
             {
                 using var context = _dbFactory.CreateDbContext();
                 var associate = await context.Set<Associate>()
