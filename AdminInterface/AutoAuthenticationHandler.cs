@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
 namespace AdminInterface;
-
+/// <summary>
+/// Used by HTTP to check authorization
+/// </summary>
+/// <param name="identityService">The implementation of identity service (injected from Program.cs)</param>
 public class AutoAuthenticationHandler(
     IOptionsMonitor<AutoAuthenticationOptions> options,
     ILoggerFactory logger,
