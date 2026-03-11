@@ -6,7 +6,7 @@ import pyodbc
 import sys
 import os
 from typing import Optional
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 @dataclass
 class ResetAttempt:
@@ -30,7 +30,7 @@ def main():
         print("Please ensure both badge number and CMMS number are whole numbers")
         return
 
-    load_dotenv()
+    # load_dotenv()
     conn_str = (
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
         f"SERVER={os.getenv('DB_SERVER')};"
@@ -39,6 +39,7 @@ def main():
         f"PWD={os.getenv('DB_PASS')};"
         "TrustServerCertificate=yes;" #TODO insecure, eventually require certificate verification
     )
+
     try:
         with pyodbc.connect(conn_str) as conn:
             attempt = authorize(badge_num, cmms_num, conn)
