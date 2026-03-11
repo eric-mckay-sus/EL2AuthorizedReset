@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace AdminInterface;
+/// <summary>
+/// Used by Blazor to check authorization
+/// </summary>
+/// <param name="identityService">The implementation of identity service (injected from Program.cs)</param>
 public class AutoAuthStateProvider(IUserIdentityService identityService) : AuthenticationStateProvider
 {
     /// <summary>
