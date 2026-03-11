@@ -4,26 +4,11 @@
 
 <Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        @* AuthorizeRouteView replaces the standard RouteView *@
         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
             
             <NotAuthorized>
-            @{
-                var user = context.User;
-                if (user.Identity is { IsAuthenticated: true })
-                {
-                    // This forces the browser to do a full reload to the current URL,
-                    // which triggers the Middleware/StatusCodePages logic for a 403.
-                    Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
-                }
-                else
-                {
-                    // Same for 401.
-                    Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
-                }
-            }
-        </NotAuthorized>
-
+                @{Navigation.NavigateTo(Navigation.Uri, forceLoad: true);}
+            </NotAuthorized>
             @* This is shown while the AutoAuthStateProvider is hitting the DB *@
             <Authorizing>
                 <div class="d-flex justify-content-center mt-5">
