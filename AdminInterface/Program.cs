@@ -10,6 +10,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+builder.Services.AddScoped<IUserIdentityService, UserIdentityService>();
+
 // Add custom auto-authentication handler
 builder.Services.AddAuthentication("AutoAuth")
     .AddAutoAuthentication();
@@ -38,21 +40,19 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-app.UseStatusCodePages(async statusCodeContext =>
+app.UseStatusCodePages(async context =>
 {
-    var response = statusCodeContext.HttpContext.Response;
-    var user = statusCodeContext.HttpContext.User;
+    var response = context.HttpContext.Response;
 
     if (response.StatusCode == StatusCodes.Status401Unauthorized)
     {
-        response.ContentType = "text/html; charset=utf-8";
-        await response.WriteAsync(AuthorizationMiddleware.GetUnauthorizedHtml());
+        context.HttpContext.Response.Redirect("/unauthorized");
     }
     else if (response.StatusCode == StatusCodes.Status403Forbidden)
     {
-        response.ContentType = "text/html; charset=utf-8";
-        await response.WriteAsync(AuthorizationMiddleware.GetForbiddenHtml(user));
+        context.HttpContext.Response.Redirect("/forbidden");
     }
+    await Task.CompletedTask;
 });
 
 app.UseAuthentication();
