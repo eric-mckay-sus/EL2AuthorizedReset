@@ -15,8 +15,10 @@ This should all be triggered when an associate badge swipes for machine reset
 Admin interfaces
 ---------
 
-Access should be restricted by some other authentication (i.e. Windows login, need IT help)
-
+- **Login:** Get system username, extract associate number (password implied by the fact that they are logged in)
+  - Assuming that associate number guaranteed to be last four digits
+  - Assuming that people don't hand out their login info
+  - Protects all of the following:
 - **CSV upload:** Assuming no live lookup, update the registry of CMMS numbers to locations
   - Could add interface to admin page
   - File upload, when file detected, show warning
