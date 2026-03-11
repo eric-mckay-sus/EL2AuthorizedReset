@@ -26,7 +26,7 @@ class AuthorizeReset
     {
         if(args.Length < 2)
         {
-            Console.WriteLine("Usage: AuthorizeReset [badge number] [CMMS number]");
+            Console.WriteLine("Usage: dotnet run [badge number] [CMMS number]");
             return;
         }
         if(!(int.TryParse(args[0], out int badgeNum) && int.TryParse(args[1], out int cmmsNum)))
@@ -54,6 +54,7 @@ class AuthorizeReset
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Error.WriteLine("ERROR: Invalid Badge or CMMS number.");
+            Console.ResetColor();
         }
     }
 
