@@ -13,7 +13,7 @@
                         <th>@(attribute?.Name ?? prop.Name)</th>
                     }
                      @if (OnDelete.HasDelegate || OnExpand.HasDelegate){
-                        <th>Actions</th> @* For the delete button, plus probably an edit button if/when that is added later *@
+                        <th>Actions</th> @* For the expand and delete buttons *@
                     }
                 </tr>
             </thead>

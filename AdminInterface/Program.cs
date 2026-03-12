@@ -11,6 +11,7 @@ builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<IUserIdentityService, UserIdentityService>();
+builder.Services.AddMemoryCache();
 
 // Authentication & Authorization
 builder.Services.AddAuthentication("AutoAuth")
