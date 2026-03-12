@@ -1,9 +1,67 @@
 ﻿@page "/"
-@inherits EntityManagerBase<Reset, Reset>
+@inherits HomeBase
 
 <PageTitle>Home</PageTitle>
 
 <h1>Historical Resets</h1>
 
-@* Pretty basic for now, might add filters later, but DataView is already perfectly inherited via EntityManagerBase *@
+<div class="filter-panel mb-3 p-3 border rounded bg-light">
+    <div class="row g-3">
+        <!-- Associate Number Filter -->
+        <div class="col-2">
+            <label class="form-label">Associate #</label>
+            <NumberInput TValue="int?" @bind-value="FilterAssocNum.Value" Placeholder="(e.g. 2964)" />
+        </div>
+
+        <!-- Associate Name Filter -->
+        <div class="col-3">
+            <label class="form-label">Associate Name</label>
+            <TextInput @bind-value="FilterAssocName.Value" Placeholder="Enter associate name, case-insensitive" />
+        </div>
+
+        <!-- CMMS Number Filter -->
+        <div class="col-2">
+            <label class="form-label">CMMS #</label>
+            <NumberInput TValue="int?" @bind-value="FilterCmmsNum.Value" Placeholder="Enter complete CMMS number" />
+        </div>
+
+        <!-- Line Name Filter -->
+        <div class="col-2">
+            <label class="form-label">Line Name</label>
+            <TextInput @bind-value="FilterLineName.Value" Placeholder="Enter any part of the line name" />
+        </div>
+
+        <!-- Authorization Status Filter -->
+        <div class="col-2">
+            <label class="form-label">Authorization</label>
+            <select class="form-control" 
+                    value="@FilterIsAuthorized.Value?.ToString().ToLower()" 
+                    @onchange="@(e => {
+                        var val = e.Value?.ToString();
+                        FilterIsAuthorized.Value = string.IsNullOrEmpty(val) ? null : bool.Parse(val);
+                    })">
+                <option value="">All</option>
+                <option value="true">Authorized</option>
+                <option value="false">Unauthorized</option>
+            </select>
+        </div>
+
+        <!-- Date Range Filters -->
+        <div class="col-2">
+            <label class="form-label">From Date</label>
+            <DateInput TValue="DateTime?" @bind-Value="FilterStartDate.Value" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">To Date</label>
+            <DateInput TValue="DateTime?" @bind-Value="FilterEndDate.Value" />
+        </div>
+
+        <div class="col-12 d-flex justify-content-end gap-3">
+            <Button Color="ButtonColor.Secondary" Outline="true" @onclick="ClearAllFilters">Clear</Button>
+            <Button Color="ButtonColor.Primary"  @onclick="LoadData">Execute</Button>
+        </div>
+    </div>
+</div>
+
 <UniversalTable T="Reset" Items="DataView" OnSort="ToggleSort" GetSortIcon="GetSortIcon" />
