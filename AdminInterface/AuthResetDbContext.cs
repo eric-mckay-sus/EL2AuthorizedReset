@@ -34,7 +34,7 @@ public class Associate
     [Range(1, 9999, ErrorMessage = "Associate number must be four digits")]
     [UniqueAssociateNumber]
     [Column("associateNum")]
-    public int AssocNum { get; set; }
+    public int? AssocNum { get; set; }
 
     [Required(ErrorMessage = "Associate name is required")]
     [MaxLength(32, ErrorMessage = "Associate name must be no longer than 32 characters")]

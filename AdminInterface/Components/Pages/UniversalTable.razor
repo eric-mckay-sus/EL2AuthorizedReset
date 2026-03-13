@@ -11,7 +11,9 @@
                     {
                         var attribute = prop.GetCustomAttribute<ColumnAttribute>();
                         var displayName = attribute?.Name ?? prop.Name;
-                        <th @onclick="() => OnSort.InvokeAsync(prop.Name)" style=@(OnSort.HasDelegate ? "cursor:pointer" : "cursor:auto")>
+                        <th @onclick="() => OnSort.InvokeAsync(prop.Name)"
+                        style=@(OnSort.HasDelegate ? "cursor:pointer" : "cursor:auto")
+                        title=@(OnSort.HasDelegate ? $"Toggle sort for {displayName}" : "")>
                             @displayName @SortIcon(prop.Name)
                         </th>
                     }

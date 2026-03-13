@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 var builder = WebApplication.CreateBuilder(args);
 
 // Database Configuration
-var connectionString = builder.Configuration["ConnectionStrings--DefaultConnection"];
+var connectionString = builder.Configuration["ConnectionStrings__DefaultConnection"];
 builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
     options.UseSqlServer(connectionString));
 
