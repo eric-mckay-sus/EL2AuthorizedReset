@@ -48,7 +48,7 @@ public class UploadCsvToDb
 
         if (!Console.ReadLine().Equals("y", StringComparison.OrdinalIgnoreCase)) return; // default to cancel if user does not input y or Y
 
-        Env.Load();
+        // Env.Load();
         var builder = new SqlConnectionStringBuilder
         {
             DataSource = Environment.GetEnvironmentVariable("DB_SERVER"),

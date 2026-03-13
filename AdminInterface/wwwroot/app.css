@@ -237,6 +237,9 @@ h1:focus {
 /* Professional Status Box */
 .status-box {
     text-align: left;
+    margin: 0 auto 1.5rem auto; /* Center the box within the sheet */
+    max-width: 400px; /* Prevents the box from being too wide */
+    width: 100%; /* But the full width of its container */
     background: hsl(210, 11%, 90%);
     color: hsl(210, 17%, 15%);
     border-radius: 6px;
@@ -255,10 +258,11 @@ h1:focus {
 
 .status-content {
     padding: 15px;
-    margin: 0;
+    margin: 0 auto;
     white-space: pre-wrap;
     max-height: 200px;
     overflow-y: auto;
+    text-align: left;
 }
 
 .bordered-right {
@@ -287,4 +291,55 @@ h1:focus {
     filter: grayscale(50%);
     transition: all 0.5s ease-in-out;
     pointer-events: none;
+}
+
+.error-page-wrapper {
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    min-height: 80vh; 
+    margin: 0;
+    min-width: 700px;
+}
+
+.container-sheet {
+    background: white; 
+    padding: 40px; 
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    max-width: 600px; 
+    text-align: center;
+}
+
+.unauth-text { color: #d32f2f; }
+.forbidden-text { color: #f5576c; }
+.notfound-text { color: #6c757d; }
+
+.user-info {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.error-code {
+    margin: 0 0 10px 0;
+    font-size: 48px;
+    font-weight: bold;
+
+}
+.error-title {
+    color: #333;
+    font-size: 20px;
+    margin: 0 0 20px 0;
+    font-weight: 500;
+}
+
+.error-message {
+    color: #666;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
 }

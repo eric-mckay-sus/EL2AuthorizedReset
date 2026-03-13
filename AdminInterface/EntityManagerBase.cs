@@ -32,7 +32,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     /// When the page loads, prepare the table
     /// </summary>
     /// <returns></returns>
-    protected override async Task OnInitializedAsync() => await LoadData();
+    protected override async Task OnParametersSetAsync() => await LoadData();
 
     /// <summary>
     /// Load the table, applying any filters the child assigns
