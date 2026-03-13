@@ -22,6 +22,8 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     protected string? ErrorMessage; // The error message for uniqueness constraint, if applicable
     protected DeleteDialog deleteDialog = default!; // The dialog to show upon pressing the delete button for a row
     protected bool IsFormVisible = false; // Whether to show or hide the add form
+    protected bool IsLoading = true; // Whether the DataView is loading
+
     // For sorting
     public string CurrentSortColumn { get; set; } = ""; // The name of the column that results are currently being sorted by
     public string SortDir { get; set; } = "none"; // The sort direction of the currently sorted column
@@ -38,6 +40,10 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
     /// <returns></returns>
     protected virtual async Task LoadData()
     {
+        // Update and show loading state
+        IsLoading = true;
+        StateHasChanged();
+
         using var context = DbFactory.CreateDbContext();
 
         // Gets all results (delayed execution)
@@ -50,6 +56,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase
 
         // Execute here (DataView requires a list for display)
         DataView = await query.ToListAsync();
+        IsLoading = false;
         StateHasChanged();
     }
 
