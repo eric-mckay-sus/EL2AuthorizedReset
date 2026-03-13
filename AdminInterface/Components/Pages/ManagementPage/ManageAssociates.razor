@@ -100,6 +100,19 @@
     [Parameter] public Associate? target { get; set; }
 
     /// <summary>
+    /// Skip LoadData if there's no change that requires a DB hit
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnParametersSetAsync()
+    {
+        
+        if (DataView.Count == 0) 
+        {
+            await base.OnParametersSetAsync();
+        }
+    }
+
+    /// <summary>
     /// Override for table refresh that verifies the targeted associate is still in the dataview.
     /// If it isn't, tell the parent to hide the associated lines
     /// </summary>

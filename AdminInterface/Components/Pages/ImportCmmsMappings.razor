@@ -3,6 +3,7 @@
 @inherits EntityManagerBase<CmmsLine, CmmsLine>
 @inject IWebHostEnvironment Environment
 @inject IConfiguration Config
+@attribute [Authorize(Roles = "Admin")]
 
 <h1>Update CMMS Mappings</h1>
 
@@ -37,6 +38,7 @@
 
 @code {
     private string? uploadStatus;
+    private string? filePath;
 
     private async Task HandleFileSelection(InputFileChangeEventArgs e)
     {
@@ -52,7 +54,7 @@
                 Directory.CreateDirectory(uploadsFolderPath); // Ensure directory exists
 
                 string trustedFileName = $"cmms_mappings_{DateTime.Now:yyyy-MM-dd}";
-                var filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(file.Name));
+                filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(file.Name));
 
                 // Copy the file data from the read stream to the file stream on the server
                 using (var stream = new FileStream(filePath, FileMode.Create))
@@ -79,6 +81,10 @@
         catch (Exception ex)
         {
             uploadStatus += $"\nUpload failed: {ex.Message}";
+        }
+        finally{
+            if(!string.IsNullOrWhiteSpace(filePath))
+                File.Delete(filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
         }
     }
 }
