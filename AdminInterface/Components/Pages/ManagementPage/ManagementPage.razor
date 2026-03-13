@@ -1,5 +1,6 @@
 @page "/manage"
 @using AdminInterface
+@attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>Manage</PageTitle>
 
@@ -20,8 +21,12 @@
     Associate? targeted;
     bool isTargeting = false;
     public void HandleExpand(Associate associate) {
-        targeted = associate;
-        isTargeting = true;
+        if (associate.Equals(targeted)){
+            HandleClose();
+        } else {
+            targeted = associate;
+            isTargeting = true;
+        }
     }
     public void HandleClose(){
         targeted = null;
