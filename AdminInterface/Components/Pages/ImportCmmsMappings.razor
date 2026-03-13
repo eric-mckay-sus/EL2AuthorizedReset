@@ -26,7 +26,14 @@
     </div>
 </div>
 
-<UniversalTable T="CmmsLine" Items="DataView.Take(100)" />
+@if (IsLoading){
+    <Spinner Color="SpinnerColor.Primary" />
+} else {
+    @if (DataView.Count > 100){
+        <h3>This is a preview. There are more mappings not shown.</h3>
+    }
+    <UniversalTable T="CmmsLine" Items="DataView.Take(100)" />
+}
 
 @code {
     private string? uploadStatus;

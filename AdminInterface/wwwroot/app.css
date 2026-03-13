@@ -281,3 +281,10 @@ h1:focus {
     border-left: none !important;
     padding-right: 15px;
 }
+
+.table-container.stale {
+    opacity: 0.5;
+    filter: grayscale(50%);
+    transition: all 0.5s ease-in-out;
+    pointer-events: none;
+}
