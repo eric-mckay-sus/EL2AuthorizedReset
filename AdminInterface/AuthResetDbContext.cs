@@ -142,20 +142,25 @@ public class Reset
     public int Id { get; set; }
 
     [Column("requestTime")]
-    public DateTime? Timestamp { get; set; }
+    public DateTime Timestamp { get; set; }
 
     [Column("associateNum")]
-    public int? AssocNum { get; set; }
+    public int AssocNum { get; set; }
 
     [Column("associateName")]
     public string? AssocName { get; set; }
 
     [Column("cmmsNum")]
-    public int? CmmsNum { get; set; }
+    public int CmmsNum { get; set; }
 
     [Column("lineName")]
     public string? LineName { get; set; }
 
     [Column("isAuthorized")]
     public bool? IsAuthorized { get; set; }
+
+    public override string ToString()
+    {
+        return $"Associate #{AssocNum} reset {CmmsNum} at {Timestamp}";
+    }
 }
