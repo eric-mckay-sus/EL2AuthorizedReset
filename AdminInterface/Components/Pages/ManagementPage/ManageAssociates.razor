@@ -78,14 +78,18 @@
     </div>
 }
 
-@if (DataView.Count > 0) {
-    @if (HandleExpand.HasDelegate){
-        <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" OnExpand="HandleExpand" />
-    } else {
-        <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" />
-    }
+@if (IsLoading){
+    <Spinner Color="SpinnerColor.Primary" />
 } else {
-    <h3>No associates matched search criteria @searchText</h3>
+    @if (DataView.Count > 0) {
+        @if (HandleExpand.HasDelegate){
+            <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" OnExpand="HandleExpand" />
+        } else {
+            <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" />
+        }
+    } else {
+        <h3>No associates matched search criteria @searchText</h3>
+    }
 }
 
 <DeleteDialog @ref="deleteDialog" />
