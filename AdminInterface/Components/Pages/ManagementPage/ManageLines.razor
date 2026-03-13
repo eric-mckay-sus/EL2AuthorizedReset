@@ -55,16 +55,20 @@
         </div>
     }
 
-    @if (DataView.Count > 0) {
-        <UniversalTable
-            T="AssocNameLine"
-            Items="DataView"
-            OnDelete="HandleDelete"
-        />
+    @if (IsLoading){
+        <Spinner Color="SpinnerColor.Secondary" />
     } else {
-        <div class="text-center">
-            <h3>No lines authorized for @target.Name</h3>
-        </div>
+        @if (DataView.Count > 0) {
+            <UniversalTable
+                T="AssocNameLine"
+                Items="DataView"
+                OnDelete="HandleDelete"
+            />
+        } else {
+            <div class="text-center">
+                <h3>No lines authorized for @target.Name</h3>
+            </div>
+        }
     }
 
     <DeleteDialog @ref="deleteDialog" />
