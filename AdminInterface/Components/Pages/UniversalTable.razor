@@ -3,7 +3,7 @@
 @using System.ComponentModel.DataAnnotations.Schema
 
 <div class="table-responsive-wrapper">
-    <div class="table-container">
+    <div class="table-container @(IsStale ? "stale" : "")">
         <table class="table res-table table-striped text-nowrap">
             <thead class="table-dark">
                 <tr>
@@ -11,7 +11,7 @@
                     {
                         var attribute = prop.GetCustomAttribute<ColumnAttribute>();
                         var displayName = attribute?.Name ?? prop.Name;
-                        <th @onclick="() => OnSort.InvokeAsync(prop.Name)" style="cursor:pointer">
+                        <th @onclick="() => OnSort.InvokeAsync(prop.Name)" style=@(OnSort.HasDelegate ? "cursor:pointer" : "cursor:auto")>
                             @displayName @SortIcon(prop.Name)
                         </th>
                     }
@@ -60,5 +60,6 @@
     private object GetKey(T item) => KeySelector?.Invoke(item) ?? item!; // When asked to get the key, try to use the key selector, but if there isn't one, use the object itself
     [Parameter] public EventCallback<string> OnSort { get; set; } // Handles everything related to sorting
     [Parameter] public Func<string, string> GetSortIcon { get; set; } = (col) => "";
+    [Parameter] public bool IsStale { get; set; } = false;
     private string SortIcon(string col) => GetSortIcon?.Invoke(col) ?? "";
 }
