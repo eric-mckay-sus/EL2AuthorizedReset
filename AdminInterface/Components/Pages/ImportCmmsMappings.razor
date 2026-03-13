@@ -5,33 +5,44 @@
 @inject IConfiguration Config
 @attribute [Authorize(Roles = "Admin")]
 
+<PageTitle>Import CMMS Mappings</PageTitle>
+
 <h1>Update CMMS Mappings</h1>
 
-<p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number</p>
-<p><strong>WARNING:</strong> If successful, this will overwrite the existing CMMS mappings (associates will retain all <em>lines</em>)</p>
+<p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number when a machine moves between lines</p>
+<Alert Color="AlertColor.Danger" Class="d-inline-block"><strong>WARNING: </strong>If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>)</Alert>
 
-<div class="upload-container mb-4">
-    <div class="upload-card">
-        <label for="fileInput" class="custom-file-upload">
-            <Icon Name="IconName.CloudArrowUp" /> Choose CSV File
+<InputFile id="fileInput" OnChange="HandleFileSelection" accept=".csv" class="drag-drop-input"
+        @ondrag:preventDefault="true" 
+        @ondrop:preventDefault="true" />
+
+@* <div class="d-flex mb-3" style="justify-content: center">
+    <div class="upload-card flex-column @(_isDragging ? "drag-active" : "")"
+    @ondrag:preventDefault="true" 
+    @ondrop:preventDefault="true"> 
+        <label for="fileInput" class="upload-button">
+            <i class="bi bi-cloud-arrow-up" style="font-size: 22px"></i> Choose CSV File
         </label>
-        <InputFile id="fileInput" OnChange="HandleFileSelection" accept=".csv" /> <br />
-
-        @if (!string.IsNullOrEmpty(uploadStatus))
-        {
-            <div class="status-box mt-3">
-                <div class="status-header">Upload Progress</div>
-                <pre class="status-content">@uploadStatus</pre>
-            </div>
-        }
-    </div>
-</div>
+        
+    </div> *@
+    @if (filePath != null)
+    {
+        <h4>Selected file: @filePath</h4>
+    }
+    @if (!string.IsNullOrEmpty(uploadStatus))
+    {
+        <div class="status-box mt-3">
+            <div class="status-header">Upload Progress</div>
+            <pre class="status-content">@uploadStatus</pre>
+        </div>
+    }
+@* </div> *@
 
 @if (IsLoading){
     <Spinner Color="SpinnerColor.Primary" />
 } else {
     @if (DataView.Count > 100){
-        <h3>This is a preview. There are more mappings not shown.</h3>
+        <Alert Color="AlertColor.Info" Class="d-inline-flex"><Icon Name="IconName.InfoCircle" Class="me-2" />This is a preview of the current mappings. There are more mappings not shown.</Alert>
     }
     <UniversalTable T="CmmsLine" Items="DataView.Take(100)" />
 }
@@ -39,6 +50,12 @@
 @code {
     private string? uploadStatus;
     private string? filePath;
+    private bool _isDragging = false;
+
+    private void HandleDragEnter() => _isDragging = true;
+    private void HandleDragOver() => _isDragging = true;
+    private void HandleDragLeave() => _isDragging = false;
+    private void HandleDrop() => _isDragging = false;
 
     private async Task HandleFileSelection(InputFileChangeEventArgs e)
     {
@@ -49,32 +66,31 @@
             var file = e.File;
             if (file != null)
             {
-                // Putting the upload in wwwroot works well from a file management standpoint, but will make dotnet watch a little buggy. dotnet run works fine.
+                // Putting the upload in wwwroot works well from a file management standpoint, but will trigger dotnet watch's hot reload. dotnet run works fine.
                 var uploadsFolderPath = Path.Combine(Environment.WebRootPath, "uploads");
                 Directory.CreateDirectory(uploadsFolderPath); // Ensure directory exists
 
                 string trustedFileName = $"cmms_mappings_{DateTime.Now:yyyy-MM-dd}";
                 filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(file.Name));
 
-                // Copy the file data from the read stream to the file stream on the server
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Stream the file data from the element to the server
+                using (FileStream stream = new(filePath, FileMode.Create))
                 {
                     await file.OpenReadStream().CopyToAsync(stream);
                 }
 
                 // No risk of using null-forgiving operator because the app would have already crashed without a connection
-                string conn = Config.GetConnectionString("DefaultConnection")!;
+                string conn = Config["ConnectionStrings__DefaultConnection"]!;
                 uploadStatus = ""; // Clear so the upload has a fresh slate
                 var blazorProgress = new Progress<string>(msg => {
                     uploadStatus += msg; // Get reported message
                     StateHasChanged(); // Refresh UI to show reported message
                 });
                 await CmmsCsvReader.Upload(filePath, conn, blazorProgress);
-                await Task.Delay(500);
+                await Task.Delay(100);
                 if (uploadStatus.Contains("Connecting...Connected!\nUploading...Complete!")){
                     uploadStatus += $"\n'{file.Name}' successfully uploaded.";
                 }
-                File.Delete(filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
                 await LoadData();
             }
         }

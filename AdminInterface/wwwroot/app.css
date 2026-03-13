@@ -201,43 +201,70 @@ h1:focus {
 
 /* Container for the upload area */
 .upload-card {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     background: #f8f9fa;
-    border: 2px dashed #dee2e6;
-    border-radius: 8px;
-    padding: 2rem;
+    border: 3px dashed #dee2e6;
+    border-radius: 25px;
+    padding: 4vh;
+    margin-bottom: 5px;
+    justify-content: center;
     text-align: center;
+    width: 50vh;
     transition: border-color 0.3s ease;
 }
 
-.upload-card:hover {
+.upload-card.drag-active {
     border-color: #007bff;
+    background-color: hsl(211, 100%, 95%);
+    transform: scale(1.02);
+    transition: all 0.2s ease;
 }
 
-/* Hide the default simple input */
+/* Hide the default simple input
 #fileInput {
     display: none;
-}
+} */
 
-/* Style the label as the button */
-.custom-file-upload {
-    display: inline-block;
+/* Style the label as the button
+.upload-button {
+    display: flex;
+    align-items: center;
     padding: 10px 24px;
     cursor: pointer;
     background-color: hsl(211, 100%, 45%);
+    font-size: 18px;
     color: white;
     border-radius: 5px;
     font-weight: 600;
     transition: ease 0.2s;
+    gap: 6px;
+    z-index: 1;
+    position: relative;
 }
 
-.custom-file-upload:hover {
+.upload-button:hover {
     background-color: #0056b3;
+} */
+
+.drag-drop-input {
+    position: relative;
+    border: 1px dashed black; /* for visibility */
+    top: 0;
+    left: 0;
+    width: 800px;
+    height: 400px;
+    cursor: pointer;
 }
 
 /* Professional Status Box */
 .status-box {
     text-align: left;
-    margin: 0 auto 1.5rem auto; /* Center the box within the sheet */
+    margin: 0 0.25rem 1.25rem auto; /* Center the box within the sheet */
     max-width: 400px; /* Prevents the box from being too wide */
     width: 100%; /* But the full width of its container */
     background: hsl(210, 11%, 90%);
@@ -249,7 +276,7 @@ h1:focus {
 
 .status-header {
     background: hsl(210, 10%, 87%);
-    padding: 8px 15px;
+    padding: 4px 8px;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -257,9 +284,9 @@ h1:focus {
 }
 
 .status-content {
-    padding: 15px;
+    padding: 2px 5px;
     margin: 0 auto;
-    white-space: pre-wrap;
+    white-space: pre-line;
     max-height: 200px;
     overflow-y: auto;
     text-align: left;
@@ -271,9 +298,9 @@ h1:focus {
 }
 
 .transition-width {
-    transition: flex 0.3s ease-in-out, 
-                max-width 0.3s ease-in-out, 
-                width 0.3s ease-in-out;
+    transition: flex 0.4s ease-in-out, 
+                max-width 0.4s ease-in-out, 
+                width 0.4s ease-in-out;
     
     /* Ensure the element doesn't snap to content size during the move */
     flex-shrink: 0; 
