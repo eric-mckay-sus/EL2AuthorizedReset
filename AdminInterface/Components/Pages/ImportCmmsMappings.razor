@@ -8,6 +8,7 @@
 <h1>Update CMMS Mappings</h1>
 
 <p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number</p>
+<p><strong>WARNING:</strong> If successful, this will overwrite the existing CMMS mappings (associates will retain all <em>lines</em>)</p>
 
 <div class="upload-container mb-4">
     <div class="upload-card">
@@ -26,7 +27,14 @@
     </div>
 </div>
 
-<UniversalTable T="CmmsLine" Items="DataView.Take(100)" />
+@if (IsLoading){
+    <Spinner Color="SpinnerColor.Primary" />
+} else {
+    @if (DataView.Count > 100){
+        <h3>This is a preview. There are more mappings not shown.</h3>
+    }
+    <UniversalTable T="CmmsLine" Items="DataView.Take(100)" />
+}
 
 @code {
     private string? uploadStatus;
@@ -58,11 +66,15 @@
                 string conn = Config.GetConnectionString("DefaultConnection")!;
                 uploadStatus = ""; // Clear so the upload has a fresh slate
                 var blazorProgress = new Progress<string>(msg => {
-                    uploadStatus += msg;
-                    StateHasChanged(); // Refresh UI to show "Parsing...", "Connected!", etc.
+                    uploadStatus += msg; // Get reported message
+                    StateHasChanged(); // Refresh UI to show reported message
                 });
                 await CmmsCsvReader.Upload(filePath, conn, blazorProgress);
-                uploadStatus += $"\n'{file.Name}' successfully uploaded.";
+                await Task.Delay(500);
+                if (uploadStatus.Contains("Connecting...Connected!\nUploading...Complete!")){
+                    uploadStatus += $"\n'{file.Name}' successfully uploaded.";
+                }
+                File.Delete(filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
                 await LoadData();
             }
         }
