@@ -12,31 +12,26 @@
 <p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number when a machine moves between lines</p>
 <Alert Color="AlertColor.Danger" Class="d-inline-block"><strong>WARNING: </strong>If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>)</Alert>
 
-<InputFile id="fileInput" OnChange="HandleFileSelection" accept=".csv" class="drag-drop-input"
-        @ondrag:preventDefault="true" 
-        @ondrop:preventDefault="true" />
-
-@* <div class="d-flex mb-3" style="justify-content: center">
-    <div class="upload-card flex-column @(_isDragging ? "drag-active" : "")"
-    @ondrag:preventDefault="true" 
-    @ondrop:preventDefault="true"> 
+<div class="centered-container">
+    <div class="upload-card @(_isDragging ? "drag-active" : "")">
         <label for="fileInput" class="upload-button">
             <i class="bi bi-cloud-arrow-up" style="font-size: 22px"></i> Choose CSV File
         </label>
-        
-    </div> *@
-    @if (filePath != null)
-    {
-        <h4>Selected file: @filePath</h4>
-    }
-    @if (!string.IsNullOrEmpty(uploadStatus))
-    {
-        <div class="status-box mt-3">
-            <div class="status-header">Upload Progress</div>
-            <pre class="status-content">@uploadStatus</pre>
-        </div>
-    }
-@* </div> *@
+        <InputFile id="fileInput" OnChange="HandleFileSelection" accept=".csv" class="hidden-input-overlay"
+            @ondragenter="HandleDragEnter"
+            @ondragleave="HandleDragLeave"
+            @ondragover="HandleDragOver"
+            @ondrop="HandleDrop" />
+
+        @if (!string.IsNullOrEmpty(uploadStatus))
+        {
+            <div class="status-box mt-3">
+                <div class="status-header">Upload Progress</div>
+                <pre class="status-content">@uploadStatus</pre>
+            </div>
+        }
+    </div>
+</div>
 
 @if (IsLoading){
     <Spinner Color="SpinnerColor.Primary" />
