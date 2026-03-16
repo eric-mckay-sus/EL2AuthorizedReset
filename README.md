@@ -25,5 +25,5 @@ dotnet build
 Run the web UI (AdminInterface):
 
 ```bash
-dotnet run --project HiokiNL2SQLMark1\AdminInterface.csproj
+dotnet run --project AdminInterface\AdminInterface.csproj
 ```

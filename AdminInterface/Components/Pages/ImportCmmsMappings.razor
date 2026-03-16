@@ -11,12 +11,12 @@
 
 <p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number when a machine moves between lines</p>
 <p>Date of last upload: @_lastUpload</p>
-<Alert Color="AlertColor.Warning" Class="d-inline-block"><i class="bi bi-exclamation-diamond"></i> If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>)</Alert>
+<Alert Color="AlertColor.Warning" Class="d-inline-block"><Icon Name="IconName.ExclamationDiamond" /> If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>)</Alert>
 
 <div class="centered-container mb-3">
     <div class="upload-card @(_isDragging ? "drag-active" : "")">
         <label for="fileInput" class="upload-button">
-            <i class="bi bi-cloud-arrow-up" style="font-size: 22px"></i> Choose CSV File
+            <i class="bi bi-cloud-arrow-up" style="font-size: 26px"></i> Choose CSV File
         </label>
         <InputFile id="fileInput" OnChange="e => selectedFile = e.File" accept=".csv" class="hidden-input-overlay"
             @ondragenter="HandleDragEnter"
@@ -39,7 +39,7 @@
     <Alert Color="AlertColor.Danger" Class="mt-3 animate-fade-in">
         <p><strong>File Selected:</strong> @selectedFile.Name (@(selectedFile.Size / 1024) KB)</p>
         <Button Color="ButtonColor.Danger" @onclick="HandleFileSelection">
-            <i class="bi bi-exclamation-triangle"></i> Confirm Overwrite
+            <Icon Name="IconName.ExclamationTriangle" /> Confirm Overwrite
         </Button>
         <Button Color="ButtonColor.Secondary" @onclick="() => selectedFile = null">Cancel</Button>
     </Alert>

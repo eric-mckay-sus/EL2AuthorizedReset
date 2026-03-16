@@ -16,7 +16,7 @@
                 <div class="row g-3">
                     <div class="col-6">
                         <label for="name" class="form-label">Associate Name:</label>
-                        <InputText id="name" @bind-Value="NewItem.Name" class="form-control" />
+                        <InputText id="name" @bind-Value="NewItem.Name" class="form-control" autocomplete="off" />
                         <ValidationMessage For="@(() => NewItem.Name)" />
                     </div>
                     <div class="col-3">

@@ -225,6 +225,10 @@ h1:focus {
     transition: all 0.3s ease;
 }
 
+.upload-card:hover{
+    border-color:hsl(210, 75%, 70%);
+}
+
 .upload-card.drag-active {
     border-color: #007bff;
     background-color: hsl(211, 100%, 95%);
@@ -247,12 +251,12 @@ h1:focus {
 .upload-button {
     display: flex;
     align-items: center;
-    padding: 10px 24px;
+    padding: 8px 20px;
     cursor: pointer;
     background-color: hsl(211, 100%, 45%);
-    font-size: 18px;
+    font-size: 20px;
     color: white;
-    border-radius: 5px;
+    border-radius: 2px;
     font-weight: 600;
     transition: ease 0.2s;
     gap: 6px;
@@ -290,11 +294,6 @@ h1:focus {
     max-height: 200px;
     overflow-y: auto;
     text-align: left;
-}
-
-.bordered-right {
-    border-right: 1px solid #cccccc; /* Customize color and thickness */
-    min-height: 1em; /* Ensure it has some height */
 }
 
 .transition-width {
@@ -369,4 +368,16 @@ h1:focus {
     color: #666;
     line-height: 1.6;
     margin: 0 0 20px 0;
+}
+
+/* Disable increment/decrement buttons */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }
