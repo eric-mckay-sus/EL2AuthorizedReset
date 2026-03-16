@@ -1,5 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
-using DotNetEnv;
+using ENV = System.Environment;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
@@ -35,22 +35,29 @@ public class UploadCsvToDb
     {
         if (args.Length == 0)
         {
-            Console.WriteLine("No file argument detected. Please retry and supply path for file from which to harvest line mappings.");
+            PrintInRed("No file argument detected. Please retry and supply path for file from which to harvest line mappings.");
             return;
         }
         string file = args[0];
         if (!File.Exists(file)) {
-            Console.WriteLine($"The file you specified ({file}) could not be found. Please check your spelling and try again. The path may be relative to this program or absolute.");
+            PrintInRed($"The file you specified ({file}) could not be found. Please check your spelling and try again. The path may be relative to this program or absolute.");
             return;
         }
 
-        // Env.Load();
+        string? server=ENV.GetEnvironmentVariable("DB_SERVER"), user=ENV.GetEnvironmentVariable("DB_USER"), password=ENV.GetEnvironmentVariable("DB_PASS"), name=ENV.GetEnvironmentVariable("DB_NAME");
+
+        if(string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name))
+        {
+            PrintInRed("One or more environment variables for database connection are missing. Please reload your terminal (or its context) and try again.");
+            return;
+        }
+
         var builder = new SqlConnectionStringBuilder
         {
-            DataSource = Environment.GetEnvironmentVariable("DB_SERVER"),
-            UserID = Environment.GetEnvironmentVariable("DB_USER"),
-            Password = Environment.GetEnvironmentVariable("DB_PASS"),
-            InitialCatalog = Environment.GetEnvironmentVariable("DB_NAME"),
+            DataSource = server,
+            UserID = user,
+            Password = password,
+            InitialCatalog = name,
             TrustServerCertificate = true //TODO insecure, eventually require certificate verification
         };
         
@@ -63,6 +70,22 @@ public class UploadCsvToDb
         await Upload(file, builder.ConnectionString, consoleProgress);
     }
 
+    /// <summary>
+    /// Prints the specified string to standard output in red
+    /// </summary>
+    /// <param name="toPrint">The string to print</param>
+    private static void PrintInRed(string toPrint)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine(toPrint);
+        Console.ResetColor();
+    }
+
+    /// <summary>
+    /// Gets the date this table was last updated (from the extended metadata)
+    /// </summary>
+    /// <param name="connectionString">The connection string to use to check the metadata</param>
+    /// <returns></returns>
     public static async Task<string> GetLastUpdatedDate(string connectionString)
     {
         const string sql = @"
