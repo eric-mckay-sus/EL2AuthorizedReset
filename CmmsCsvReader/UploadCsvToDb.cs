@@ -44,10 +44,6 @@ public class UploadCsvToDb
             return;
         }
 
-        Console.WriteLine($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {file}. Proceed? (y/n)");
-
-        if (!Console.ReadLine().Equals("y", StringComparison.OrdinalIgnoreCase)) return; // default to cancel if user does not input y or Y
-
         // Env.Load();
         var builder = new SqlConnectionStringBuilder
         {
@@ -58,8 +54,37 @@ public class UploadCsvToDb
             TrustServerCertificate = true //TODO insecure, eventually require certificate verification
         };
         
+        Console.WriteLine($"Date of last upload: {await GetLastUpdatedDate(builder.ConnectionString)}");
+        Console.WriteLine($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {file}. Proceed? (y/n)");
+
+        if (!Console.ReadLine().Equals("y", StringComparison.OrdinalIgnoreCase)) return; // default to cancel if user does not input y or Y
+
         var consoleProgress = new Progress<string>(msg => Console.Write(msg));
         await Upload(file, builder.ConnectionString, consoleProgress);
+    }
+
+    public static async Task<string> GetLastUpdatedDate(string connectionString)
+    {
+        const string sql = @"
+            SELECT CAST(value AS NVARCHAR(MAX)) AS Value 
+            FROM sys.fn_listextendedproperty(N'dateLastUpdated', N'SCHEMA', N'dbo', N'TABLE', N'cmmsToLineName', default, default)";
+
+        try
+        {
+            using SqlConnection connection = new(connectionString);
+            using SqlCommand command = new(sql, connection);
+            
+            await connection.OpenAsync();
+            
+            // ExecuteScalar is most efficient here since we only expect one row and one column
+            object? result = await command.ExecuteScalarAsync();
+
+            return result?.ToString() ?? "No upload history found.";
+        }
+        catch (Exception)
+        {
+            return "Error retrieving last upload date.";
+        }
     }
 
     /// <summary>
@@ -115,6 +140,17 @@ public class UploadCsvToDb
 
             report("Uploading...");
             await bulkCopy.WriteToServerAsync(trunc);
+
+            // Log the date of successful update in the extended properties
+            string sql = @"
+                IF EXISTS (SELECT 1 FROM sys.fn_listextendedproperty(N'dateLastUpdated', N'SCHEMA', N'dbo', N'TABLE', N'cmmsToLineName', NULL, NULL))
+                    EXEC sys.sp_updateextendedproperty @name=N'dateLastUpdated', @value=@now, @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'cmmsToLineName';
+                ELSE
+                    EXEC sys.sp_addextendedproperty @name=N'dateLastUpdated', @value=@now, @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'cmmsToLineName';";
+
+            using var command = new SqlCommand(sql, connection, transaction);
+            command.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            await command.ExecuteNonQueryAsync();
 
             transaction.Commit();
             report("Complete!\n");

@@ -10,14 +10,15 @@
 <h1>Update CMMS Mappings</h1>
 
 <p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number when a machine moves between lines</p>
-<Alert Color="AlertColor.Danger" Class="d-inline-block"><strong>WARNING: </strong>If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>)</Alert>
+<p>Date of last upload: @_lastUpload</p>
+<Alert Color="AlertColor.Warning" Class="d-inline-block"><i class="bi bi-exclamation-diamond"></i> If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>)</Alert>
 
-<div class="centered-container">
+<div class="centered-container mb-3">
     <div class="upload-card @(_isDragging ? "drag-active" : "")">
         <label for="fileInput" class="upload-button">
             <i class="bi bi-cloud-arrow-up" style="font-size: 22px"></i> Choose CSV File
         </label>
-        <InputFile id="fileInput" OnChange="HandleFileSelection" accept=".csv" class="hidden-input-overlay"
+        <InputFile id="fileInput" OnChange="e => selectedFile = e.File" accept=".csv" class="hidden-input-overlay"
             @ondragenter="HandleDragEnter"
             @ondragleave="HandleDragLeave"
             @ondragover="HandleDragOver"
@@ -33,6 +34,17 @@
     </div>
 </div>
 
+@if (selectedFile != null && !_isUploading)
+{
+    <Alert Color="AlertColor.Danger" Class="mt-3 animate-fade-in">
+        <p><strong>File Selected:</strong> @selectedFile.Name (@(selectedFile.Size / 1024) KB)</p>
+        <Button Color="ButtonColor.Danger" @onclick="HandleFileSelection">
+            <i class="bi bi-exclamation-triangle"></i> Confirm Overwrite
+        </Button>
+        <Button Color="ButtonColor.Secondary" @onclick="() => selectedFile = null">Cancel</Button>
+    </Alert>
+}
+
 @if (IsLoading){
     <Spinner Color="SpinnerColor.Primary" />
 } else {
@@ -44,21 +56,41 @@
 
 @code {
     private string? uploadStatus;
+    private string _lastUpload = "Loading...";
+    private string connString;
+    private IBrowserFile? selectedFile;
     private string? filePath;
     private bool _isDragging = false;
+    private bool _isUploading = false;
 
     private void HandleDragEnter() => _isDragging = true;
     private void HandleDragOver() => _isDragging = true;
     private void HandleDragLeave() => _isDragging = false;
     private void HandleDrop() => _isDragging = false;
 
-    private async Task HandleFileSelection(InputFileChangeEventArgs e)
+    /// <summary>
+    /// When this page loads, set up the connection string and get the last upload date
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
     {
+        // No risk of using null-forgiving operator because the app would have already crashed without a connection
+        connString = Config["ConnectionStrings__DefaultConnection"]!;
+        _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(connString);
+    }
+
+    /// <summary>
+    /// When a file is confirmed, upload it to the server, then to the DB
+    /// </summary>
+    /// <returns></returns>
+    private async Task HandleFileSelection()
+    {
+        _isUploading = true;
         uploadStatus = "Uploading...";
         try
         {
             // The file content is read into a stream
-            var file = e.File;
+            var file = selectedFile;
             if (file != null)
             {
                 // Putting the upload in wwwroot works well from a file management standpoint, but will trigger dotnet watch's hot reload. dotnet run works fine.
@@ -74,17 +106,16 @@
                     await file.OpenReadStream().CopyToAsync(stream);
                 }
 
-                // No risk of using null-forgiving operator because the app would have already crashed without a connection
-                string conn = Config["ConnectionStrings__DefaultConnection"]!;
                 uploadStatus = ""; // Clear so the upload has a fresh slate
                 var blazorProgress = new Progress<string>(msg => {
                     uploadStatus += msg; // Get reported message
                     StateHasChanged(); // Refresh UI to show reported message
                 });
-                await CmmsCsvReader.Upload(filePath, conn, blazorProgress);
+                await CmmsCsvReader.Upload(filePath, connString, blazorProgress);
                 await Task.Delay(100);
                 if (uploadStatus.Contains("Connecting...Connected!\nUploading...Complete!")){
                     uploadStatus += $"\n'{file.Name}' successfully uploaded.";
+                    _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(connString);
                 }
                 await LoadData();
             }
@@ -96,6 +127,8 @@
         finally{
             if(!string.IsNullOrWhiteSpace(filePath))
                 File.Delete(filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
+            selectedFile = null;
+            _isUploading = false;
         }
     }
 }
