@@ -1,21 +1,20 @@
 """A Python implementation of the tool that verifies whether a badge swipe is valid
 Authorizes and logs a reset based on the permissions stored in the DB
+Assumes that you have already loaded the necessary environment variables
 """
 from dataclasses import dataclass
 import pyodbc
 import sys
 import os
-from typing import Optional
-# from dotenv import load_dotenv
 
 @dataclass
 class ResetAttempt:
     """A DTO containing the information to log for a reset attempt"""
-    associate_num: int
-    associate_name: str
     cmms_num: int
-    line_name: str
-    is_authorized: bool
+    associate_num: int | None = None
+    associate_name: str | None = None
+    line_name: str | None = None
+    is_authorized: bool = False
     
 def main():
     """Entry point for the authorization class"""
@@ -30,7 +29,6 @@ def main():
         print("Please ensure both badge number and CMMS number are whole numbers")
         return
 
-    # load_dotenv()
     conn_str = (
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
         f"SERVER={os.getenv('DB_SERVER')};"
@@ -53,7 +51,7 @@ def main():
     except Exception as e:
         print(f"Database Error: {e}")
 
-def authorize(badge_num: int, cmms_num: int, conn) -> Optional[ResetAttempt]:
+def authorize(badge_num: int, cmms_num: int, conn) -> ResetAttempt:
     """
     Authorize a badge swipe to release a certain machine and collects the request data
 
@@ -63,8 +61,7 @@ def authorize(badge_num: int, cmms_num: int, conn) -> Optional[ResetAttempt]:
         conn (Connection): The open SQL connection
     
     Returns:
-        Null if badge/CMMS does not exist,
-        otherwise a ResetAttempt dataclass containing associate name, number, CMMS, line name, and whether the request was authorized
+        A ResetAttempt dataclass containing associate name, number, CMMS, line name, and whether the request was authorized
     """
     # 1. Lookup associate by badge (PK on badgeNum - fast)
     # 2. Check if CMMS maps to one of those lines (indexed on lineName)
@@ -90,7 +87,8 @@ def authorize(badge_num: int, cmms_num: int, conn) -> Optional[ResetAttempt]:
             line_name=row[2],
             is_authorized=bool(row[3])
         )
-    return None # the badge or CMMS doesn't exist
+    else:
+        return ResetAttempt(cmms_num) # the badge or CMMS doesn't exist
 
 def log_reset_attempt(attempt: ResetAttempt, conn):
     """
@@ -107,6 +105,7 @@ def log_reset_attempt(attempt: ResetAttempt, conn):
 
     with conn.cursor() as cursor:
         # Get the parameters for the SQL statement from the DTO
+        # pyodbc can map Python None to SQL NULL, unlike C# SqlDataReader
         cursor.execute(sql, (
             attempt.associate_num, 
             attempt.associate_name, 

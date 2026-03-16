@@ -1,15 +1,15 @@
 ﻿using Microsoft.Data.SqlClient;
-using DotNetEnv;
+using ENV = System.Environment;
 
 namespace EL2AuthorizedReset;
 /// <summary>
 /// A DTO containing the information to log for a reset attempt
 /// </summary>
 record ResetAttempt(
-    int AssociateNum,
-    string AssociateName,
+    int? AssociateNum,
+    string? AssociateName,
     int CmmsNum,
-    string LineName,
+    string? LineName,
     bool IsAuthorized
 );
 
@@ -31,31 +31,46 @@ class AuthorizeReset
         }
         if(!(int.TryParse(args[0], out int badgeNum) && int.TryParse(args[1], out int cmmsNum)))
         {
-            Console.WriteLine("Please ensure both badge number and CMMS number are whole numbers");
+            PrintInRed("Please ensure both badge number and CMMS number are whole numbers");
             return;
         }
-        Env.Load();
+        
+        string? server=ENV.GetEnvironmentVariable("DB_SERVER"), user=ENV.GetEnvironmentVariable("DB_USER"), password=ENV.GetEnvironmentVariable("DB_PASS"), name=ENV.GetEnvironmentVariable("DB_NAME");
+
+        if(string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name))
+        {
+            PrintInRed("One or more environment variables for database connection are missing. Please reload your terminal (or its context) and try again.");
+            return;
+        }
+
         var builder = new SqlConnectionStringBuilder
         {
-            DataSource = Environment.GetEnvironmentVariable("DB_SERVER"),
-            UserID = Environment.GetEnvironmentVariable("DB_USER"),
-            Password = Environment.GetEnvironmentVariable("DB_PASS"),
-            InitialCatalog = Environment.GetEnvironmentVariable("DB_NAME"),
+            DataSource = server,
+            UserID = user,
+            Password = password,
+            InitialCatalog = name,
             TrustServerCertificate = true //TODO insecure, eventually require certificate verification
         };
         using SqlConnection conn = new(builder.ConnectionString);
         conn.Open();
         ResetAttempt? attempt = Authorize(badgeNum, cmmsNum, conn);
-        if (attempt != null)
+        if (attempt.AssociateNum == null) // Indicates that the badge/CMMS was not found
         {
-            LogResetAttempt(attempt, conn);
-            Console.WriteLine($"Authorized: {attempt.IsAuthorized}");
-        } else
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Error.WriteLine("ERROR: Invalid Badge or CMMS number.");
-            Console.ResetColor();
+            PrintInRed("ERROR: Invalid Badge or CMMS number.");
         }
+        LogResetAttempt(attempt, conn);
+        Console.WriteLine($"Access {(attempt.IsAuthorized ? "granted" : "denied")}.");
+    }
+
+    /// <summary>
+    /// Prints the specified string to standard output in red
+    /// </summary>
+    /// <param name="toPrint">The string to print</param>
+    private static void PrintInRed(string toPrint)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine(toPrint);
+        Console.ResetColor();
     }
 
     /// <summary>
@@ -64,10 +79,8 @@ class AuthorizeReset
     /// <param name="badgeNum">The badge number read from the badge reader</param>
     /// <param name="cmmsNum">The machine's CMMS number</param>
     /// <param name="conn">The open SQL connection</param>
-    /// <returns>Null if badge/CMMS does not exist,
-    /// otherwise a ResetAttempt record containing associate name, number, CMMS, line name, and whether the request was authorized
-    /// </returns>
-    private static ResetAttempt? Authorize(int badgeNum, int cmmsNum, SqlConnection conn)
+    /// <returns>A ResetAttempt record containing associate name, number, CMMS, line name, and whether the request was authorized</returns>
+    private static ResetAttempt Authorize(int badgeNum, int cmmsNum, SqlConnection conn)
     {
         // 1. Lookup associate by badge (PK on badgeNum - fast)
         // 2. Check if CMMS maps to one of those lines (indexed on lineName)
@@ -86,17 +99,21 @@ class AuthorizeReset
 
         // Set up a reader to build a record from the returned data
         using SqlDataReader reader = cmd.ExecuteReader();
-        if (reader.Read())
-        {
+        if (reader.Read()) {
             return new ResetAttempt(
                 reader.GetInt32(0),
                 reader.GetString(1),
                 cmmsNum,
                 reader.GetString(2),
-                reader.GetBoolean(3)
-            );
-        }
-        return null; // the badge or CMMS doesn't exist
+                reader.GetBoolean(3));
+        } else {
+            return new ResetAttempt( // the badge or CMMS doesn't exist: return an empty denied request with the CMMS number
+                null,
+                null,
+                cmmsNum,
+                null,
+                false);
+        } 
     }
 
     /// <summary>
@@ -113,11 +130,11 @@ class AuthorizeReset
 
         using SqlCommand cmd = new(sql, conn);
 
-        // Get the parameters for the SQL statement from the DTO
-        cmd.Parameters.AddWithValue("@aNum", attempt.AssociateNum);
-        cmd.Parameters.AddWithValue("@aName", attempt.AssociateName);
+        // Get the parameters for the SQL statement from the DTO, coalescing nulls as required
+        cmd.Parameters.AddWithValue("@aNum", (object?)attempt.AssociateNum ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@aName", (object?)attempt.AssociateName ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@cmms", attempt.CmmsNum);
-        cmd.Parameters.AddWithValue("@line", attempt.LineName);
+        cmd.Parameters.AddWithValue("@line", (object?)attempt.LineName ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@isAuth", attempt.IsAuthorized);
 
         cmd.ExecuteNonQuery();
