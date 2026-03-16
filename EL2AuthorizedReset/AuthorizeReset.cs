@@ -125,7 +125,7 @@ class AuthorizeReset
     {
         // Authorize already did the heavy lifting of getting the data to insert
         string sql = @"
-            INSERT INTO Historical (requestTime, associateNum, associateName, cmmsNum, lineName, isAuthorized)
+            INSERT INTO HistoricalResets (requestTime, associateNum, associateName, cmmsNum, lineName, isAuthorized)
             VALUES (GETDATE(), @aNum, @aName, @cmms, @line, @isAuth)";
 
         using SqlCommand cmd = new(sql, conn);

@@ -100,7 +100,7 @@ def log_reset_attempt(attempt: ResetAttempt, conn):
     """
     # Authorize already did the heavy lifting of getting the data to insert
     sql = """
-        INSERT INTO Historical (requestTime, associateNum, associateName, cmmsNum, lineName, isAuthorized)
+        INSERT INTO HistoricalResets (requestTime, associateNum, associateName, cmmsNum, lineName, isAuthorized)
         VALUES (GETDATE(), ?, ?, ?, ?, ?)"""
 
     with conn.cursor() as cursor:

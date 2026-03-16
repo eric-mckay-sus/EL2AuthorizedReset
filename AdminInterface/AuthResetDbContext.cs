@@ -14,7 +14,7 @@ public class AuthResetDbContext(DbContextOptions<AuthResetDbContext> options) : 
     public DbSet<AssociateLine> AssociateToLine { get; set; } // for writing (table)
     public DbSet<AssocNameLine> AssocNameToLine { get; set; } // for reading (view)
     public DbSet<CmmsLine> CmmsToLineName { get; set; }
-    public DbSet<Reset> Historical { get; set; }
+    public DbSet<Reset> HistoricalResets { get; set; }
 }
 
 /// <summary>
@@ -31,7 +31,7 @@ public class Associate
     public int? BadgeNum { get; set; }
 
     [Required(ErrorMessage = "Associate number is required")]
-    [Range(1, 9999, ErrorMessage = "Associate number must be four digits")]
+    [Range(1, 99999, ErrorMessage = "Associate number must be five digits")]
     [UniqueAssociateNumber]
     [Column("associateNum")]
     public int? AssocNum { get; set; }
@@ -131,7 +131,7 @@ public class CmmsLine
 }
 
 /// <summary>
-/// Represents one row of Historical in the DB
+/// Represents one row of HistoricalResets in the DB
 /// NOTE: VERY SENSITIVE TO COL NAME CHANGES
 /// </summary>
 [PrimaryKey(nameof(Id))]
@@ -145,7 +145,7 @@ public class Reset
     public DateTime Timestamp { get; set; }
 
     [Column("associateNum")]
-    public int AssocNum { get; set; }
+    public int? AssocNum { get; set; }
 
     [Column("associateName")]
     public string? AssocName { get; set; }
