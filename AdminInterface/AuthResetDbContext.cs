@@ -134,12 +134,21 @@ public class CmmsLine
     public bool IsActive { get; set; }
 }
 
+public interface IHistorical
+{
+    public int Id { get; set; }
+
+    public DateTime Timestamp { get; set; }
+
+    public int CmmsNum { get; set; }
+}
+
 /// <summary>
 /// Represents one row of HistoricalResets in the DB
 /// NOTE: VERY SENSITIVE TO COL NAME CHANGES
 /// </summary>
 [PrimaryKey(nameof(Id))]
-public class Reset
+public class Reset : IHistorical
 {
     [Column("historyId")]
     [NotDisplayed]
@@ -174,7 +183,7 @@ public class Reset
 /// NOTE: VERY SENSITIVE TO COL NAME CHANGES
 /// </summary>
 [PrimaryKey(nameof(Id))]
-public class Lockout
+public class Lockout : IHistorical
 {
     [Column("Id")]
     [NotDisplayed]

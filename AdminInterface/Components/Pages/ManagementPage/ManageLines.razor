@@ -78,7 +78,7 @@
     [Parameter, EditorRequired] public Associate target { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Inject] private IMemoryCache _cache { get; set; } = default!;
-    private List<string?> allAvailableLines = [];
+    private List<string> allAvailableLines = [];
 
     /// <summary>
     /// When the page is initialized, create a cache of all available lines for the autofill

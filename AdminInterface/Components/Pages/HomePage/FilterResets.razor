@@ -1,19 +1,96 @@
-using System.Linq.Dynamic.Core;
+﻿@page "/"
+@inherits EntityManagerBase<Reset, Reset>
 
-namespace AdminInterface.Components.Pages;
+<PageTitle>Home</PageTitle>
 
-/// <summary>
-/// Code-behind for Home.razor
-/// Implements a filter registry system similar to LogTableLogic for the Reset table
-/// </summary>
-public class HomeBase : EntityManagerBase<Reset, Reset>
-{
-    // Filter registry to hold all active filters
-    protected Dictionary<string, IFilter> Filters { get; set; } = [];
-    private bool _filtersInitialized = false; // Whether the filters have been initialized yet
-    int LastQueryHash;
-    protected bool IsStale => LastQueryHash != GetFilterStateHash(Filters);
+<h1>Historical Resets</h1>
 
+<div class="filter-panel mb-3 p-3 border rounded bg-light">
+    <div class="row g-3">
+        <div class="col-2">
+            <label class="form-label">Associate #</label>
+            <input type="number" 
+                   class="form-control"
+                   @bind-value="FilterAssocNum.Value" 
+                   @bind-value:event="oninput" 
+                   placeholder="(e.g. 2964)" />
+        </div>
+
+        <div class="col-3">
+            <label class="form-label">Associate Name</label>
+            <input type="text" 
+                   class="form-control"
+                   @bind-value="FilterAssocName.Value" 
+                   @bind-value:event="oninput" 
+                   placeholder="Enter associate name..." />
+        </div>
+
+        <div class="col-2">
+            <label class="form-label">CMMS #</label>
+            <input type="number" 
+                   class="form-control"
+                   @bind-value="FilterCmmsNum.Value" 
+                   @bind-value:event="oninput" 
+                   placeholder="Enter complete CMMS number" />
+        </div>
+
+        <div class="col-2">
+            <label class="form-label">Line Name</label>
+            <input type="text" 
+                   class="form-control"
+                   @bind-value="FilterLineName.Value" 
+                   @bind-value:event="oninput" 
+                   placeholder="Enter any part of the line name" />
+        </div>
+
+        <div class="col-2">
+            <label class="form-label">Authorization</label>
+            <select class="form-control" 
+                    value="@FilterIsAuthorized.Value?.ToString().ToLower()" 
+                    @oninput="@(e => {
+                        var val = e.Value?.ToString();
+                        FilterIsAuthorized.Value = string.IsNullOrEmpty(val) ? null : bool.Parse(val);
+                    })">
+                <option value="">All</option>
+                <option value="true">Authorized</option>
+                <option value="false">Unauthorized</option>
+            </select>
+        </div>
+
+        <div class="col-2">
+            <label class="form-label">From Date</label>
+            <input type="date" 
+                   class="form-control"
+                   value="@FilterStartDate.Value?.ToString("yyyy-MM-dd")" 
+                   @oninput="@(e => FilterStartDate.Value = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!))" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">To Date</label>
+            <input type="date" 
+                   class="form-control"
+                   value="@FilterEndDate.Value?.ToString("yyyy-MM-dd")" 
+                   @oninput="@(e => FilterEndDate.Value = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!))" />
+        </div>
+
+        <div class="col-12 d-flex justify-content-end gap-3">
+            <button class="btn btn-outline-secondary" @onclick="ClearAllFilters">Clear</button>
+            <button class="btn btn-primary" @onclick="LoadData">Execute</button>
+        </div>
+    </div>
+</div>
+
+@if (IsLoading){
+    <Spinner Color="SpinnerColor.Primary" />
+} else {
+    @if(DataView.Count == 0){
+        <h3>No records matched your criteria.</h3>
+    } else{
+        <UniversalTable T="Reset" Items="DataView" OnSort="ToggleSort" IsStale="IsStale" GetSortIcon="GetSortIcon" />
+    }
+}
+
+@code {
     // Filter properties that expose the filters in the registry with type safety
     protected Filter<int?> FilterAssocNum => GetFilter<int?>("assocNum");
     protected Filter<string?> FilterAssocName => GetFilter<string?>("assocName");
@@ -22,44 +99,6 @@ public class HomeBase : EntityManagerBase<Reset, Reset>
     protected Filter<bool?> FilterIsAuthorized => GetFilter<bool?>("isAuthorized");
     protected Filter<DateTime?> FilterStartDate => GetFilter<DateTime?>("after");
     protected Filter<DateTime?> FilterEndDate => GetFilter<DateTime?>("before");
-
-    /// <summary>
-    /// Generate a state ID, for checking equality between two filter states
-    /// 17 and 31 are primes one off of powers of two, so we get few collisions and the compiler can take shortcuts
-    /// </summary>
-    /// <param name="filterDict">A dictionary of keys mapped to filters</param>
-    /// <returns>A value representing the state of the filters for the input dictionary</returns>
-    public int GetFilterStateHash(Dictionary<string, IFilter> filterDict) {
-        unchecked // Tells the compiler to simply truncate the calculation instead of throwing an exception for integer overflow
-        {
-            int hash = 17;
-            // Order by key to ensure dictionary order doesn't change the hash
-            foreach (var key in filterDict.Keys.OrderBy(k => k))
-            {
-                // Ignore 'in' key, it does not affect the search contents within a table
-                if (key.Equals("in", StringComparison.OrdinalIgnoreCase)) continue;
-
-                // Factor in each aspect of the filter
-                var filter = filterDict[key];
-
-                // Key and activity status are part of hash regardless of activity status
-                hash *= 31 + key.ToLower().GetHashCode();
-                hash *= 31 + filter.IsActive.GetHashCode();
-
-                // Only hash filter details if active
-                if (filter.IsActive)
-                {
-                    string value = filter.GetValue()?.ToString()?.Trim().ToLower() ?? "";
-                    hash *= 31 + value.GetHashCode();
-                }
-            }
-            // Sorts affect view, so a hash of the view should include them
-            hash *= 31 + CurrentSortColumn.GetHashCode();
-            hash *= 31 + SortDir.GetHashCode();
-            
-            return hash;
-        }
-    }
 
     /// <summary>
     /// When the page loads, initialize filters and sorts before loading data
@@ -73,20 +112,9 @@ public class HomeBase : EntityManagerBase<Reset, Reset>
     }
 
     /// <summary>
-    /// Update the query hash after loading data
-    /// </summary>
-    /// <returns></returns>
-    protected override async Task LoadData()
-    {
-        await base.LoadData();
-        LastQueryHash = GetFilterStateHash(Filters);
-        StateHasChanged();
-    }
-
-    /// <summary>
     /// Initializes the filter registry with default values
     /// </summary>
-    protected void InitializeFilters()
+    protected override void InitializeFilters()
     {
         if (_filtersInitialized) return;
 
@@ -99,25 +127,6 @@ public class HomeBase : EntityManagerBase<Reset, Reset>
         Filters["before"] = new Filter<DateTime?>("before", null);
 
         _filtersInitialized = true;
-    }
-
-    /// <summary>
-    /// Helper method to get a strongly-typed filter from the registry
-    /// </summary>
-    /// <typeparam name="T">The type of the filter value (int, string, DateTime, or bool)</typeparam>
-    /// <param name="key">The key of the filter to retrieve</param>
-    /// <returns>The filter with appropriate type</returns>
-    protected Filter<T> GetFilter<T>(string key)
-    {
-        if (Filters.TryGetValue(key, out var filter) && filter is Filter<T> typedFilter)
-        {
-            return typedFilter;
-        }
-
-        // If filter doesn't exist or has wrong type, create a new one
-        var newFilter = new Filter<T>(key, default);
-        Filters[key] = newFilter;
-        return newFilter;
     }
 
     /// <summary>
@@ -179,19 +188,5 @@ public class HomeBase : EntityManagerBase<Reset, Reset>
         }
 
         return query;
-    }
-
-    /// <summary>
-    /// Clears all filters and reloads the data
-    /// </summary>
-    protected async Task ClearAllFilters()
-    {
-        foreach (var filter in Filters.Values)
-        {
-            filter.Reset();
-        }
-
-        await LoadData();
-        StateHasChanged();
     }
 }
