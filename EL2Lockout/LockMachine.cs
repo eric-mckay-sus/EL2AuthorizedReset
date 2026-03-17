@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using ENV = System.Environment;
 
-namespace EL2AuthorizedReset;
+namespace EL2Lockout;
 
 /// <summary>
 /// Log a lockout using CMMS number and reason

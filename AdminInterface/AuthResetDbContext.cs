@@ -15,6 +15,7 @@ public class AuthResetDbContext(DbContextOptions<AuthResetDbContext> options) : 
     public DbSet<AssocNameLine> AssocNameToLine { get; set; } // for reading (view)
     public DbSet<CmmsLine> CmmsToLineName { get; set; }
     public DbSet<Reset> HistoricalResets { get; set; }
+    public DbSet<Lockout> HistoricalLockouts { get; set; }
 }
 
 /// <summary>
@@ -124,10 +125,13 @@ public class AssocNameLine : IAssociateLink
 public class CmmsLine
 {
     [Column("cmmsNum")]
-    public int? CmmsNum { get; set; }
+    public int CmmsNum { get; set; }
 
     [Column("lineName")]
-    public string? LineName { get; set; }
+    public string LineName { get; set; }
+
+    [Column("isActive")]
+    public bool IsActive { get; set; }
 }
 
 /// <summary>
@@ -163,4 +167,25 @@ public class Reset
     {
         return $"Associate #{AssocNum} reset {CmmsNum} at {Timestamp}";
     }
+}
+
+/// <summary>
+/// Represents one row of HistoricalLockouts in the DB
+/// NOTE: VERY SENSITIVE TO COL NAME CHANGES
+/// </summary>
+[PrimaryKey(nameof(Id))]
+public class Lockout
+{
+    [Column("Id")]
+    [NotDisplayed]
+    public int Id { get; set; }
+
+    [Column("requestTime")]
+    public DateTime Timestamp { get; set; }
+
+    [Column("cmmsNum")]
+    public int CmmsNum { get; set; }
+
+    [Column("reason")]
+    public string Reason { get; set; }
 }

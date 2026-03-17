@@ -15,6 +15,11 @@
                 <Icon Name="IconName.Clock" /> Historical Resets
             </NavLink>
         </div>
+        <div class="nav-item">
+            <NavLink class="nav-link" href="view-lines">
+                <Icon Name="IconName.FilterSquare" /> View Line Status
+            </NavLink>
+        </div>
 
         <AuthorizeView Roles="Admin">
             <Authorized>
@@ -25,7 +30,7 @@
                 </div>
                 
                 <div class="nav-item">
-                    <NavLink class="nav-link" href="import-cmms-mappings" Match="NavLinkMatch.All">
+                    <NavLink class="nav-link" href="import-cmms-mappings">
                         <Icon Name="IconName.CloudArrowUpFill" /> Update CMMS
                     </NavLink>
                 </div>

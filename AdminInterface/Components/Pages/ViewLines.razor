@@ -1,0 +1,8 @@
+@page "/view-lines"
+@inherits EntityManagerBase<CmmsLine, CmmsLine>
+
+@if (IsLoading){
+    <Spinner Color="SpinnerColor.Primary" />
+} else {
+    <UniversalTable T="CmmsLine" Items="DataView" />
+}

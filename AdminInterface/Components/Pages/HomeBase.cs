@@ -49,7 +49,6 @@ public class HomeBase : EntityManagerBase<Reset, Reset>
                 // Only hash filter details if active
                 if (filter.IsActive)
                 {
-                    hash *= 31 + filter.IsNegated.GetHashCode();
                     string value = filter.GetValue()?.ToString()?.Trim().ToLower() ?? "";
                     hash *= 31 + value.GetHashCode();
                 }
@@ -137,60 +136,46 @@ public class HomeBase : EntityManagerBase<Reset, Reset>
         // Apply Associate Number filter
         if (filterAssocNum.IsActive)
         {
-            query = filterAssocNum.IsNegated
-                ? query.Where(r => r.AssocNum != filterAssocNum.Value)
-                : query.Where(r => r.AssocNum == filterAssocNum.Value);
+            query = query.Where(r => r.AssocNum == filterAssocNum.Value);
         }
 
         // Apply Associate Name filter (contains - case insensitive)
         if (filterAssocName.IsActive && !string.IsNullOrWhiteSpace(filterAssocName.Value))
         {
             var searchName = filterAssocName.Value.ToLower();
-            query = filterAssocName.IsNegated
-                ? query.Where(r => !r.AssocName.Contains(searchName))
-                : query.Where(r => r.AssocName.Contains(searchName));
+            query = query.Where(r => r.AssocName.Contains(searchName));
         }
 
         // Apply CMMS Number filter
         if (filterCmmsNum.IsActive)
         {
-            query = filterCmmsNum.IsNegated
-                ? query.Where(r => r.CmmsNum != filterCmmsNum.Value)
-                : query.Where(r => r.CmmsNum == filterCmmsNum.Value);
+            query = query.Where(r => r.CmmsNum == filterCmmsNum.Value);
         }
 
         // Apply Line Name filter (contains - case insensitive)
         if (filterLineName.IsActive && !string.IsNullOrWhiteSpace(filterLineName.Value))
         {
             var searchLine = filterLineName.Value.ToLower();
-            query = filterLineName.IsNegated
-                ? query.Where(r => !r.LineName.Contains(searchLine))
-                : query.Where(r => r.LineName.Contains(searchLine));
+            query = query.Where(r => r.LineName.Contains(searchLine));
         }
 
         // Apply Authorization Status filter
         if (filterIsAuthorized.IsActive)
         {
-            query = filterIsAuthorized.IsNegated
-                ? query.Where(r => r.IsAuthorized != filterIsAuthorized.Value)
-                : query.Where(r => r.IsAuthorized == filterIsAuthorized.Value);
+            query = query.Where(r => r.IsAuthorized == filterIsAuthorized.Value);
         }
 
         // Apply Start Date filter (inclusive)
         if (filterStartDate.IsActive)
         {
-            query = filterStartDate.IsNegated
-                ? query.Where(r => r.Timestamp < filterStartDate.Value)
-                : query.Where(r => r.Timestamp >= filterStartDate.Value);
+            query = query.Where(r => r.Timestamp >= filterStartDate.Value);
         }
 
         // Apply End Date filter (inclusive - include the entire day)
         if (filterEndDate.IsActive)
         {
             var endOfDay = filterEndDate.Value?.AddDays(1).AddTicks(-1);
-            query = filterEndDate.IsNegated
-                ? query.Where(r => r.Timestamp > endOfDay)
-                : query.Where(r => r.Timestamp <= endOfDay);
+            query = query.Where(r => r.Timestamp <= endOfDay);
         }
 
         return query;

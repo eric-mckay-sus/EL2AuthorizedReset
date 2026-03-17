@@ -13,17 +13,6 @@ public class Filter<T> : IFilter
     public Action? OnChanged { get; set; } // The action to perform when this filter is updated
     public bool IsActive { get; set; } // Whether this filter is being used in the current query (thus its value should be used). Automatically updated on value change
 
-    private bool _isNegated; // Whether to filter by (or filter out). Internal property
-    public bool IsNegated // Whether to filter by (or filter out). Methods for access & modification
-    {
-        get => _isNegated;
-        set 
-        {
-            _isNegated = value;
-            OnChanged?.Invoke();
-        }
-    } 
-
     private T? _value; // The internal value held by the filter
     public T? Value // The methods of accessing and modifying the filter's value
     { 
@@ -41,11 +30,9 @@ public class Filter<T> : IFilter
     /// </summary>
     /// <param name="key">The name for the new filter</param>
     /// <param name="value">The value for which to filter</param>
-    /// <param name="isNegated">The negation status of the new filter</param>
-    public Filter(string key, T? value, bool isNegated = false)
+    public Filter(string key, T? value)
     {
         Key = key;
-        IsNegated = isNegated;
         Value = value;
     }
 
@@ -67,7 +54,6 @@ public class Filter<T> : IFilter
     /// <param name="other">The IFilter instance to copy from</param>
     public void CopyFrom(IFilter other)
     {
-        IsNegated = other.IsNegated;
         Value = (T?)other.GetValue();
     }
 
@@ -77,7 +63,6 @@ public class Filter<T> : IFilter
     public void Reset()
     {
         Value = default!;
-        IsNegated = false;
     }
 
     /// <summary>
@@ -94,7 +79,7 @@ public class Filter<T> : IFilter
 
     public override string ToString()
     {
-        return $"{Key}: {(IsNegated ? "-" : "")}{Value} ({(!IsDefault(Value) ? "active" : "not active")})";
+        return $"{Key}: {Value} ({(!IsDefault(Value) ? "active" : "not active")})";
     }
 }
 
@@ -104,7 +89,6 @@ public class Filter<T> : IFilter
 public interface IFilter
 {
     string Key { get; set; }
-    bool IsNegated { get; set; }
     bool IsActive { get; }
     object? GetValue();
     void SetValue(object? val);
