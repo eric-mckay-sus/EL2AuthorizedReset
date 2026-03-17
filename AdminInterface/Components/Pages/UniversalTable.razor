@@ -23,7 +23,7 @@
                 </tr>
             </thead>
             <tbody>
-                <Virtualize TItem="T" Items="@(Items?.ToList())" Context="item" OverscanCount="10">
+                <Virtualize TItem="T" Items="@(Items?.ToList())" Context="item" OverscanCount="8" ItemSize="41">
                     <tr @key="GetKey(item)" class="@(item?.Equals(target) == true ? "table-primary" : "")">
                         @foreach (var prop in _cachedProps)
                         {
