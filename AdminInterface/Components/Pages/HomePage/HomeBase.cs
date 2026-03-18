@@ -70,7 +70,7 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
 
         // Line Name (Partial match)
         if (FilterLineName.IsActive)
-            query = query.Where(x => x.LineName != null && x.Status == "Released" && x.LineName.Contains(FilterLineName.Value!));
+            query = query.Where(x => x.LineName != null && x.LineName.Contains(FilterLineName.Value!));
 
         // Resetter Name (Partial match)
         if (FilterResetter.IsActive)

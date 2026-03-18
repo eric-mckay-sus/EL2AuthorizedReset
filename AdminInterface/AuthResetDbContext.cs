@@ -145,6 +145,9 @@ public class LockoutReset
     [NotDisplayed]
     public int LockoutId { get; set; }
 
+    [Column("LineName")]
+    public string? LineName { get; set; }
+
     [Column("CmmsNum")]
     public int CmmsNum { get; set; }
 
@@ -162,9 +165,6 @@ public class LockoutReset
 
     [Column("ResetTime")]
     public DateTime? ResetTime { get; set; }
-
-    [Column("LineName")]
-    public string? LineName { get; set; }
 
     [NotDisplayed]
     [Column("ResetId")]
@@ -191,6 +191,7 @@ public class Reset
     [Column("associateName")]
     public string? AssocName { get; set; }
 
+    [NotDisplayed]
     [Column("cmmsNum")]
     public int CmmsNum { get; set; }
 

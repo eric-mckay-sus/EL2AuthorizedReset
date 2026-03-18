@@ -2,7 +2,7 @@
 
 @if (target != null){ @* For prerendering cases*@
     <div class="d-flex justify-content-between mb-3">
-        <h4>Attempted Reset History for CMMS #@target.CmmsNum targeting lockout at @target.LockoutTime</h4>
+        <h5>CMMS #@target.CmmsNum reset requests for lockout at @target.LockoutTime</h5>
         @if (OnClose.HasDelegate){
             <button type="button" class="btn-close" aria-label="Close" @onclick="OnClose"></button>
         }
@@ -12,7 +12,7 @@
         <Spinner Color="SpinnerColor.Primary" />
     } else {
         @if(DataView.Count == 0){
-            <h4>No records matched your criteria.</h4>
+            <h5>No records matched your criteria.</h5>
         } else{
             var authorizedEntry = DataView.FirstOrDefault(x => x.IsAuthorized == true); // Works bc we're sorting by authorization descending
             <UniversalTable T="Reset" Items="DataView" OnSort="ToggleSort" IsStale="IsStale" GetSortIcon="GetSortIcon" target="authorizedEntry" highlightStyle="table-success" />

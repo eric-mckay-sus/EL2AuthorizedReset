@@ -12,6 +12,7 @@
                         var attribute = prop.GetCustomAttribute<ColumnAttribute>();
                         var displayName = attribute?.Name ?? prop.Name;
                         <th @onclick="() => OnSort.InvokeAsync(prop.Name)"
+                        class="col-@prop.Name"
                         style=@(OnSort.HasDelegate ? "cursor:pointer" : "cursor:auto")
                         title=@(OnSort.HasDelegate ? $"Toggle sort for {displayName}" : "")>
                             @displayName @SortIcon(prop.Name)
@@ -27,7 +28,7 @@
                     <tr @key="GetKey(item)" class="@(item?.Equals(target) == true ? highlightStyle : "")">
                         @foreach (var prop in _cachedProps)
                         {
-                            <td>@(prop.GetValue(item)?.ToString() ?? "—")</td>
+                            <td class="col-@prop.Name">@(prop.GetValue(item)?.ToString() ?? "—")</td>
                         }
                         @if (OnExpand.HasDelegate || OnDelete.HasDelegate) {
                             <td>
