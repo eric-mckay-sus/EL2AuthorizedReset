@@ -20,7 +20,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     // Filter registry to hold all active filters
     protected Dictionary<string, IFilter> Filters { get; set; } = [];
     protected bool _filtersInitialized = false; // Whether the filters have been initialized yet
-    int LastQueryHash;
+    protected int LastQueryHash;
     protected bool IsStale => LastQueryHash != GetFilterStateHash(Filters);
 
     protected TWrite NewItem = new(); // The item to be added (from the add form)
@@ -122,7 +122,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         IQueryable<TRead> query = context.Set<TRead>();
 
         // Apply filter(s) set by the child
-        query = ApplyFilter(query);
+        query = ApplyFilters(query);
 
         query = ApplySorting(query);
 
@@ -138,7 +138,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// </summary>
     /// <param name="query">The IQueryable implementation to which the filters should be applied</param>
     /// <returns>The query, filtered by whatever filter(s) applied by the child</returns>
-    protected virtual IQueryable<TRead> ApplyFilter(IQueryable<TRead> query) => query;
+    protected virtual IQueryable<TRead> ApplyFilters(IQueryable<TRead> query) => query;
 
     /// <summary>
     /// Throw flag to display add form, view handles the actual displaying

@@ -136,7 +136,7 @@
     /// </summary>
     /// <param name="query">The query to which the filter should be applied</param>
     /// <returns>The query where results match the search criterion</returns>
-    protected override IQueryable<Associate> ApplyFilter(IQueryable<Associate> query)
+    protected override IQueryable<Associate> ApplyFilters(IQueryable<Associate> query)
     {
         if(int.TryParse(searchText, out int assocNum)){
             query = query.Where(a => a.AssocNum == assocNum);

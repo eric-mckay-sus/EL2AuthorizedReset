@@ -1,5 +1,4 @@
-﻿@page "/"
-@inherits EntityManagerBase<Reset, Reset>
+﻿@inherits EntityManagerBase<Reset, Reset>
 
 <PageTitle>Home</PageTitle>
 
@@ -132,7 +131,7 @@
     /// <summary>
     /// Overrides EntityManagerBase's ApplyFilter to apply all active filters from the registry
     /// </summary>
-    protected override IQueryable<Reset> ApplyFilter(IQueryable<Reset> query)
+    protected override IQueryable<Reset> ApplyFilters(IQueryable<Reset> query)
     {
         var filterAssocNum = GetFilter<int?>("assocNum");
         var filterAssocName = GetFilter<string?>("assocName");

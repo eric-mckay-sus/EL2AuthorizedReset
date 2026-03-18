@@ -127,7 +127,7 @@
     /// </summary>
     /// <param name="query">The query to which the filter should be applied</param>
     /// <returns>An IQueryable with only table entries matching the target associate</returns>
-    protected override IQueryable<AssocNameLine> ApplyFilter(IQueryable<AssocNameLine> query)
+    protected override IQueryable<AssocNameLine> ApplyFilters(IQueryable<AssocNameLine> query)
     {
         if (target == null) return query.Where(x => false); // Return empty if no associate selected
 

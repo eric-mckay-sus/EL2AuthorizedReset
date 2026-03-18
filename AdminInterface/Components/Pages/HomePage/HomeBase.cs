@@ -1,0 +1,90 @@
+namespace AdminInterface.Components.Pages.HomePage;
+public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
+{
+    // Filter accessors for cleaner HTML
+    protected Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
+    protected Filter<string?> FilterReason => GetFilter<string?>("reason");
+    protected Filter<string?> FilterStatus => GetFilter<string?>("status");
+    protected Filter<string?> FilterLineName => GetFilter<string?>("lineName");
+    protected Filter<string?> FilterResetter => GetFilter<string?>("resetter");
+    
+    // Time range filters
+    protected Filter<DateTime?> FilterLockAfter => GetFilter<DateTime?>("lockAfter");
+    protected Filter<DateTime?> FilterLockBefore => GetFilter<DateTime?>("lockBefore");
+    protected Filter<DateTime?> FilterResetAfter => GetFilter<DateTime?>("resetAfter");
+    protected Filter<DateTime?> FilterResetBefore => GetFilter<DateTime?>("resetBefore");
+
+    /// <summary>
+    /// When the app loads, fill the filter registry and default sort
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        InitializeFilters();
+        CurrentSortColumn = "LockoutTime";
+        SortDir = "descending";
+        await base.OnInitializedAsync();
+    }
+
+    /// <summary>
+    /// Load the filter registry for searching the lockout/reset table
+    /// </summary>
+    protected override void InitializeFilters() {
+        if (_filtersInitialized) return;
+        
+        Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
+        Filters["reason"] = new Filter<string?>("reason", null);
+        Filters["status"] = new Filter<string?>("status", null);
+        Filters["lineName"] = new Filter<string?>("lineName", null);
+        Filters["resetter"] = new Filter<string?>("resetter", null);
+        
+        Filters["lockAfter"] = new Filter<DateTime?>("lockAfter", null);
+        Filters["lockBefore"] = new Filter<DateTime?>("lockBefore", null);
+        Filters["resetAfter"] = new Filter<DateTime?>("resetAfter", null);
+        Filters["resetBefore"] = new Filter<DateTime?>("resetBefore", null);
+
+        _filtersInitialized = true;
+    }
+
+    /// <summary>
+    /// Apply all filters with input in the filter panel
+    /// </summary>
+    /// <param name="query">The query to which the filters should be applied</param>
+    /// <returns>The filtered query</returns>
+    protected override IQueryable<LockoutReset> ApplyFilters(IQueryable<LockoutReset> query)
+    {
+        // CMMS Number (Exact)
+        if (FilterCmmsNum.IsActive)
+            query = query.Where(x => x.CmmsNum == FilterCmmsNum.Value);
+
+        // Status (Exact match from dropdown)
+        if (FilterStatus.IsActive && !string.IsNullOrEmpty(FilterStatus.Value))
+            query = query.Where(x => x.Status == FilterStatus.Value);
+
+        // Reason (Partial match)
+        if (FilterReason.IsActive)
+            query = query.Where(x => x.Reason.Contains(FilterReason.Value!));
+
+        // Line Name (Partial match)
+        if (FilterLineName.IsActive)
+            query = query.Where(x => x.ResetBy != null && x.Status == "Released" && x.ResetBy.Contains(FilterLineName.Value!));
+
+        // Resetter Name (Partial match)
+        if (FilterResetter.IsActive)
+            query = query.Where(x => x.ResetBy != null && x.ResetBy.Contains(FilterResetter.Value!));
+
+        // Lockout Time Range
+        if (FilterLockAfter.IsActive)
+            query = query.Where(x => x.LockoutTime >= FilterLockAfter.Value);
+        if (FilterLockBefore.IsActive)
+            query = query.Where(x => x.LockoutTime <= FilterLockBefore.Value);
+
+        // Reset Time Range
+        if (FilterResetAfter.IsActive)
+            query = query.Where(x => x.ResetTime != null && x.ResetTime >= FilterResetAfter.Value);
+        if (FilterResetBefore.IsActive)
+            query = query.Where(x => x.ResetTime != null && x.ResetTime <= FilterResetBefore.Value);
+
+        return base.ApplyFilters(query);
+    }
+}
