@@ -15,6 +15,8 @@ public class AuthResetDbContext(DbContextOptions<AuthResetDbContext> options) : 
     public DbSet<AssocNameLine> AssocNameToLine { get; set; } // for reading (view)
     public DbSet<CmmsLine> CmmsToLineName { get; set; }
     public DbSet<Reset> HistoricalResets { get; set; }
+    public DbSet<Lockout> HistoricalLockouts { get; set; }
+    public DbSet<LockoutReset> FullHistorical { get; set; } // for reading (view)
 }
 
 /// <summary>
@@ -124,10 +126,49 @@ public class AssocNameLine : IAssociateLink
 public class CmmsLine
 {
     [Column("cmmsNum")]
-    public int? CmmsNum { get; set; }
+    public int CmmsNum { get; set; }
 
     [Column("lineName")]
+    public string LineName { get; set; }
+
+    [Column("isActive")]
+    public bool IsActive { get; set; }
+}
+
+[PrimaryKey(nameof(LockoutId))]
+/// <summary>
+/// Represents the pairing of a lockout and reset
+/// </summary>
+public class LockoutReset
+{
+    [Column("LockoutId")]
+    [NotDisplayed]
+    public int LockoutId { get; set; }
+
+    [Column("LineName")]
     public string? LineName { get; set; }
+
+    [Column("CmmsNum")]
+    public int CmmsNum { get; set; }
+
+    [Column("LockoutTime")]
+    public DateTime LockoutTime { get; set; }
+
+    [Column("Reason")]
+    public string Reason { get; set; }
+
+    [Column("Status")]
+    public string Status { get; set; }
+
+    [Column("ResetBy")]
+    public string? ResetBy { get; set; }
+
+    [Column("ResetTime")]
+    public DateTime? ResetTime { get; set; }
+
+    [NotDisplayed]
+    [Column("ResetId")]
+    public int? ResetId { get; set; }
 }
 
 /// <summary>
@@ -137,7 +178,7 @@ public class CmmsLine
 [PrimaryKey(nameof(Id))]
 public class Reset
 {
-    [Column("historyId")]
+    [Column("Id")]
     [NotDisplayed]
     public int Id { get; set; }
 
@@ -150,6 +191,7 @@ public class Reset
     [Column("associateName")]
     public string? AssocName { get; set; }
 
+    [NotDisplayed]
     [Column("cmmsNum")]
     public int CmmsNum { get; set; }
 
@@ -159,8 +201,33 @@ public class Reset
     [Column("isAuthorized")]
     public bool? IsAuthorized { get; set; }
 
+    [NotDisplayed]
+    [Column("LockoutId")]
+    public int? LockoutId { get; set; }
+
     public override string ToString()
     {
         return $"Associate #{AssocNum} reset {CmmsNum} at {Timestamp}";
     }
+}
+
+/// <summary>
+/// Represents one row of HistoricalLockouts in the DB
+/// NOTE: VERY SENSITIVE TO COL NAME CHANGES
+/// </summary>
+[PrimaryKey(nameof(Id))]
+public class Lockout
+{
+    [Column("Id")]
+    [NotDisplayed]
+    public int Id { get; set; }
+
+    [Column("requestTime")]
+    public DateTime Timestamp { get; set; }
+
+    [Column("cmmsNum")]
+    public int CmmsNum { get; set; }
+
+    [Column("reason")]
+    public string Reason { get; set; }
 }

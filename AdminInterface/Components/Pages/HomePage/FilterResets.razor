@@ -1,0 +1,43 @@
+﻿@inherits EntityManagerBase<Reset, Reset>
+
+@if (target != null){ @* For prerendering cases*@
+    <div class="d-flex justify-content-between mb-3">
+        <h5>CMMS #@target.CmmsNum reset requests for lockout at @target.LockoutTime</h5>
+        @if (OnClose.HasDelegate){
+            <button type="button" class="btn-close" aria-label="Close" @onclick="OnClose"></button>
+        }
+    </div>
+
+    @if (IsLoading){
+        <Spinner Color="SpinnerColor.Primary" />
+    } else {
+        @if(DataView.Count == 0){
+            <h5>No records matched your criteria.</h5>
+        } else{
+            var authorizedEntry = DataView.FirstOrDefault(x => x.IsAuthorized == true); // Works bc we're sorting by authorization descending
+            <UniversalTable T="Reset" Items="DataView" OnSort="ToggleSort" IsStale="IsStale" GetSortIcon="GetSortIcon" target="authorizedEntry" highlightStyle="table-success" />
+        }
+    }
+}
+
+@code {
+    [Parameter] public LockoutReset target { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnInitialized()
+    {
+        CurrentSortColumn = "IsAuthorized";
+        SortDir = "descending";
+    }
+
+    /// <summary>
+    /// Ensures that only resets targeting the selected lockout are shown
+    /// </summary>
+    protected override IQueryable<Reset> ApplyFilters(IQueryable<Reset> query)
+    {
+        if (target == null) return query.Where(x => false); // Return empty if no associate selected
+
+        // Filter the view by the selected lockout
+        return query.Where(x => x.LockoutId == target.LockoutId);
+    }
+}
