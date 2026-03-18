@@ -1,191 +1,43 @@
 ﻿@inherits EntityManagerBase<Reset, Reset>
 
-<PageTitle>Home</PageTitle>
-
-<h1>Historical Resets</h1>
-
-<div class="filter-panel mb-3 p-3 border rounded bg-light">
-    <div class="row g-3">
-        <div class="col-2">
-            <label class="form-label">Associate #</label>
-            <input type="number" 
-                   class="form-control"
-                   @bind-value="FilterAssocNum.Value" 
-                   @bind-value:event="oninput" 
-                   placeholder="(e.g. 2964)" />
-        </div>
-
-        <div class="col-3">
-            <label class="form-label">Associate Name</label>
-            <input type="text" 
-                   class="form-control"
-                   @bind-value="FilterAssocName.Value" 
-                   @bind-value:event="oninput" 
-                   placeholder="Enter associate name..." />
-        </div>
-
-        <div class="col-2">
-            <label class="form-label">CMMS #</label>
-            <input type="number" 
-                   class="form-control"
-                   @bind-value="FilterCmmsNum.Value" 
-                   @bind-value:event="oninput" 
-                   placeholder="Enter complete CMMS number" />
-        </div>
-
-        <div class="col-2">
-            <label class="form-label">Line Name</label>
-            <input type="text" 
-                   class="form-control"
-                   @bind-value="FilterLineName.Value" 
-                   @bind-value:event="oninput" 
-                   placeholder="Enter any part of the line name" />
-        </div>
-
-        <div class="col-2">
-            <label class="form-label">Authorization</label>
-            <select class="form-control" 
-                    value="@FilterIsAuthorized.Value?.ToString().ToLower()" 
-                    @oninput="@(e => {
-                        var val = e.Value?.ToString();
-                        FilterIsAuthorized.Value = string.IsNullOrEmpty(val) ? null : bool.Parse(val);
-                    })">
-                <option value="">All</option>
-                <option value="true">Authorized</option>
-                <option value="false">Unauthorized</option>
-            </select>
-        </div>
-
-        <div class="col-2">
-            <label class="form-label">From Date</label>
-            <input type="date" 
-                   class="form-control"
-                   value="@FilterStartDate.Value?.ToString("yyyy-MM-dd")" 
-                   @oninput="@(e => FilterStartDate.Value = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!))" />
-        </div>
-
-        <div class="col-md-2">
-            <label class="form-label">To Date</label>
-            <input type="date" 
-                   class="form-control"
-                   value="@FilterEndDate.Value?.ToString("yyyy-MM-dd")" 
-                   @oninput="@(e => FilterEndDate.Value = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!))" />
-        </div>
-
-        <div class="col-12 d-flex justify-content-end gap-3">
-            <button class="btn btn-outline-secondary" @onclick="ClearAllFilters">Clear</button>
-            <button class="btn btn-primary" @onclick="LoadData">Execute</button>
-        </div>
+@if (target != null){ @* For prerendering cases*@
+    <div class="d-flex justify-content-between mb-3">
+        <h4>Attempted Reset History for CMMS #@target.CmmsNum targeting lockout at @target.LockoutTime</h4>
+        @if (OnClose.HasDelegate){
+            <button type="button" class="btn-close" aria-label="Close" @onclick="OnClose"></button>
+        }
     </div>
-</div>
 
-@if (IsLoading){
-    <Spinner Color="SpinnerColor.Primary" />
-} else {
-    @if(DataView.Count == 0){
-        <h3>No records matched your criteria.</h3>
-    } else{
-        <UniversalTable T="Reset" Items="DataView" OnSort="ToggleSort" IsStale="IsStale" GetSortIcon="GetSortIcon" />
+    @if (IsLoading){
+        <Spinner Color="SpinnerColor.Primary" />
+    } else {
+        @if(DataView.Count == 0){
+            <h4>No records matched your criteria.</h4>
+        } else{
+            var authorizedEntry = DataView.FirstOrDefault(x => x.IsAuthorized == true); // Works bc we're sorting by authorization descending
+            <UniversalTable T="Reset" Items="DataView" OnSort="ToggleSort" IsStale="IsStale" GetSortIcon="GetSortIcon" target="authorizedEntry" highlightStyle="table-success" />
+        }
     }
 }
 
 @code {
-    // Filter properties that expose the filters in the registry with type safety
-    protected Filter<int?> FilterAssocNum => GetFilter<int?>("assocNum");
-    protected Filter<string?> FilterAssocName => GetFilter<string?>("assocName");
-    protected Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
-    protected Filter<string?> FilterLineName => GetFilter<string?>("lineName");
-    protected Filter<bool?> FilterIsAuthorized => GetFilter<bool?>("isAuthorized");
-    protected Filter<DateTime?> FilterStartDate => GetFilter<DateTime?>("after");
-    protected Filter<DateTime?> FilterEndDate => GetFilter<DateTime?>("before");
+    [Parameter] public LockoutReset target { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
 
-    /// <summary>
-    /// When the page loads, initialize filters and sorts before loading data
-    /// </summary>
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        InitializeFilters();
+        CurrentSortColumn = "IsAuthorized";
         SortDir = "descending";
-        CurrentSortColumn = "Timestamp";
-        await base.OnInitializedAsync();
     }
 
     /// <summary>
-    /// Initializes the filter registry with default values
-    /// </summary>
-    protected override void InitializeFilters()
-    {
-        if (_filtersInitialized) return;
-
-        Filters["assocNum"] = new Filter<int?>("assocNum", null);
-        Filters["assocName"] = new Filter<string?>("assocName", null);
-        Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
-        Filters["lineName"] = new Filter<string?>("lineName", null);
-        Filters["isAuthorized"] = new Filter<bool?>("isAuthorized", null);
-        Filters["after"] = new Filter<DateTime?>("after", null);
-        Filters["before"] = new Filter<DateTime?>("before", null);
-
-        _filtersInitialized = true;
-    }
-
-    /// <summary>
-    /// Overrides EntityManagerBase's ApplyFilter to apply all active filters from the registry
+    /// Ensures that only resets targeting the selected lockout are shown
     /// </summary>
     protected override IQueryable<Reset> ApplyFilters(IQueryable<Reset> query)
     {
-        var filterAssocNum = GetFilter<int?>("assocNum");
-        var filterAssocName = GetFilter<string?>("assocName");
-        var filterCmmsNum = GetFilter<int?>("cmmsNum");
-        var filterLineName = GetFilter<string?>("lineName");
-        var filterIsAuthorized = GetFilter<bool?>("isAuthorized");
-        var filterStartDate = GetFilter<DateTime?>("after");
-        var filterEndDate = GetFilter<DateTime?>("before");
+        if (target == null) return query.Where(x => false); // Return empty if no associate selected
 
-        // Apply Associate Number filter
-        if (filterAssocNum.IsActive)
-        {
-            query = query.Where(r => r.AssocNum == filterAssocNum.Value);
-        }
-
-        // Apply Associate Name filter (contains - case insensitive)
-        if (filterAssocName.IsActive && !string.IsNullOrWhiteSpace(filterAssocName.Value))
-        {
-            var searchName = filterAssocName.Value.ToLower();
-            query = query.Where(r => r.AssocName.Contains(searchName));
-        }
-
-        // Apply CMMS Number filter
-        if (filterCmmsNum.IsActive)
-        {
-            query = query.Where(r => r.CmmsNum == filterCmmsNum.Value);
-        }
-
-        // Apply Line Name filter (contains - case insensitive)
-        if (filterLineName.IsActive && !string.IsNullOrWhiteSpace(filterLineName.Value))
-        {
-            var searchLine = filterLineName.Value.ToLower();
-            query = query.Where(r => r.LineName.Contains(searchLine));
-        }
-
-        // Apply Authorization Status filter
-        if (filterIsAuthorized.IsActive)
-        {
-            query = query.Where(r => r.IsAuthorized == filterIsAuthorized.Value);
-        }
-
-        // Apply Start Date filter (inclusive)
-        if (filterStartDate.IsActive)
-        {
-            query = query.Where(r => r.Timestamp >= filterStartDate.Value);
-        }
-
-        // Apply End Date filter (inclusive - include the entire day)
-        if (filterEndDate.IsActive)
-        {
-            var endOfDay = filterEndDate.Value?.AddDays(1).AddTicks(-1);
-            query = query.Where(r => r.Timestamp <= endOfDay);
-        }
-
-        return query;
+        // Filter the view by the selected lockout
+        return query.Where(x => x.LockoutId == target.LockoutId);
     }
 }

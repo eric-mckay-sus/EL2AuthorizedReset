@@ -135,12 +135,12 @@ public class CmmsLine
     public bool IsActive { get; set; }
 }
 
+[PrimaryKey(nameof(LockoutId))]
 /// <summary>
 /// Represents the pairing of a lockout and reset
 /// </summary>
 public class LockoutReset
 {
-    [Key] // EF Core needs a key; LockoutId is unique per row here
     [Column("LockoutId")]
     [NotDisplayed]
     public int LockoutId { get; set; }
@@ -199,6 +199,10 @@ public class Reset
 
     [Column("isAuthorized")]
     public bool? IsAuthorized { get; set; }
+
+    [NotDisplayed]
+    [Column("LockoutId")]
+    public int? LockoutId { get; set; }
 
     public override string ToString()
     {

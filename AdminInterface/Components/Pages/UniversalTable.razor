@@ -5,7 +5,7 @@
 <div class="table-responsive-wrapper">
     <div class="table-container @(IsStale ? "stale" : "")">
         <table class="table res-table table-striped text-nowrap">
-            <thead class="table-dark">
+            <thead>
                 <tr>
                     @foreach (var prop in _cachedProps)
                     {
@@ -24,7 +24,7 @@
             </thead>
             <tbody>
                 <Virtualize TItem="T" Items="@(Items?.ToList())" Context="item" OverscanCount="8" ItemSize="41">
-                    <tr @key="GetKey(item)" class="@(item?.Equals(target) == true ? "table-primary" : "")">
+                    <tr @key="GetKey(item)" class="@(item?.Equals(target) == true ? highlightStyle : "")">
                         @foreach (var prop in _cachedProps)
                         {
                             <td>@(prop.GetValue(item)?.ToString() ?? "—")</td>
@@ -33,13 +33,13 @@
                             <td>
                                 @* Only show the expand button if there's an expand binding *@
                                 @if (OnExpand.HasDelegate){
-                                    <button class="btn btn-link p-0 text-secondary me-3" @onclick="() => OnExpand.InvokeAsync(item)" title="Expand">
+                                    <button class="btn btn-link p-0 text-secondary" @onclick="() => OnExpand.InvokeAsync(item)" title="Expand">
                                         <Icon Name="IconName.List" Size="IconSize.x4" />
                                     </button>
                                 }
                                 @* Only show the delete button if there's a delete binding *@
                                 @if (OnDelete.HasDelegate){
-                                    <button class="btn btn-link p-0 text-danger" @onclick="() => OnDelete.InvokeAsync(item)" title="Delete">
+                                    <button class="btn btn-link p-0 text-danger ms-3" @onclick="() => OnDelete.InvokeAsync(item)" title="Delete">
                                         <Icon Name="IconName.Trash" Size="IconSize.x4" />
                                     </button>
                                 }
@@ -58,6 +58,7 @@
     [Parameter] public EventCallback<T> OnExpand { get; set; } // The action to bind to the expand button being pressed
     [Parameter] public Func<T, object>? KeySelector { get; set; } // The mapping of how to get the key for T
     [Parameter] public T? target { get; set; } // The row to highlight
+    [Parameter] public string highlightStyle { get; set; } = "table-primary";
     private PropertyInfo[] _cachedProps = typeof(T).GetProperties().Where(p => p.GetCustomAttribute<NotDisplayedAttribute>() == null).ToArray(); // A cache of the properties of T so it's not invoked for each header, excluding those marked NotDisplayed
     private object GetKey(T item) => KeySelector?.Invoke(item) ?? item!; // When asked to get the key, try to use the key selector, but if there isn't one, use the object itself
     [Parameter] public EventCallback<string> OnSort { get; set; } // Handles everything related to sorting

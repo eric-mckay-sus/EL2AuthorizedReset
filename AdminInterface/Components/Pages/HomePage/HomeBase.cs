@@ -14,6 +14,9 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
     protected Filter<DateTime?> FilterResetAfter => GetFilter<DateTime?>("resetAfter");
     protected Filter<DateTime?> FilterResetBefore => GetFilter<DateTime?>("resetBefore");
 
+    protected LockoutReset? target;
+    protected bool isTargeting = false;
+
     /// <summary>
     /// When the app loads, fill the filter registry and default sort
     /// </summary>
@@ -67,7 +70,7 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
 
         // Line Name (Partial match)
         if (FilterLineName.IsActive)
-            query = query.Where(x => x.ResetBy != null && x.Status == "Released" && x.ResetBy.Contains(FilterLineName.Value!));
+            query = query.Where(x => x.LineName != null && x.Status == "Released" && x.LineName.Contains(FilterLineName.Value!));
 
         // Resetter Name (Partial match)
         if (FilterResetter.IsActive)
@@ -86,5 +89,19 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
             query = query.Where(x => x.ResetTime != null && x.ResetTime <= FilterResetBefore.Value);
 
         return base.ApplyFilters(query);
+    }
+
+    public void HandleExpand(LockoutReset row) {
+        if (row.Equals(target)){
+            HandleClose();
+        } else {
+            target = row;
+            isTargeting = true;
+        }
+    }
+
+    public void HandleClose(){
+        target = null;
+        isTargeting = false;
     }
 }

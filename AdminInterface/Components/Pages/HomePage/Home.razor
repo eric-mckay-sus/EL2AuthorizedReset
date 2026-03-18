@@ -3,7 +3,7 @@
 
 <PageTitle>EL2 Auth Reset</PageTitle>
 
-<h3>Lockouts & Resets</h3>
+<h2>Lockouts & Resets</h2>
 
 <div class="filter-panel mb-3 p-3 border rounded bg-light">
     <div class="row g-3">
@@ -62,9 +62,21 @@
         <p class="mt-2 text-muted">Fetching historical data...</p>
     </div>
 } else {
-    <UniversalTable T="LockoutReset" 
-                    Items="DataView" 
-                    IsStale="IsStale"
-                    OnSort="ToggleSort" 
-                    GetSortIcon="GetSortIcon" />
+    <div class="row overflow-hidden flex-nowrap">
+        <div class="@(isTargeting ? "col-8" : "col-12") transition-width">
+            <UniversalTable T="LockoutReset" 
+                Items="DataView"
+                IsStale="IsStale"
+                OnSort="ToggleSort"
+                GetSortIcon="GetSortIcon"
+                OnExpand="HandleExpand"
+                target="target" />
+        </div>
+        <div class="@(isTargeting ? "col-4" : "col-0") transition-width overflow-hidden" 
+            style="@(isTargeting ? "" : "display:none;")">
+            @if (isTargeting) {
+                <FilterResets target="target" OnClose="HandleClose" />
+            }
+        </div>
+    </div>
 }
