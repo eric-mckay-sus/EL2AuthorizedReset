@@ -54,7 +54,7 @@ class AuthorizeReset
         using SqlConnection conn = new(builder.ConnectionString);
         conn.Open();
         ResetAttempt? attempt = Authorize(badgeNum, cmmsNum, conn);
-        if (attempt.AssociateNum == null) // Indicates that the badge/CMMS was not found
+        if (attempt.AssociateNum == null) // Indicates that the badge/CMMS was not found. Indicate this, but log it anyway
         {
             PrintInRed("ERROR: Invalid Badge or CMMS number.");
         }
@@ -82,20 +82,29 @@ class AuthorizeReset
     /// <returns>A ResetAttempt record containing associate name, number, CMMS, line name, and whether the request was authorized</returns>
     private static ResetAttempt Authorize(int badgeNum, int cmmsNum, SqlConnection conn)
     {
-        // 1. Lookup associate by badge (PK on badgeNum - fast)
-        // 2. Check if CMMS maps to one of those lines (indexed on lineName)
-        // 3. Get lines for that associate (indexed on associateNum)
+        // 1. Lookup minimum auth level
+        // 2. Lookup associate by badge (PK on badgeNum - fast)
+        // 3. Check if CMMS maps to one of those lines (indexed on lineName)
+        // 4. Get lines for that associate (indexed on associateNum)
+        // 5. Verify that associate has line and sufficient auth level
         string sql = @"
+        DECLARE @lockoutLevel TINYINT
+        SELECT TOP 1 @lockoutLevel=lockoutLevel FROM HistoricalLockouts
+		WHERE cmmsNum = @cmmsNum
+			AND requestTime <= GETDATE()
+			AND resolvedResetId IS NULL
+		ORDER BY requestTime ASC
+
         SELECT TOP 1 a.associateNum, a.associateName, ctl.lineName,
-        CAST(CASE WHEN atl.associateNum IS NOT NULL THEN 1 ELSE 0 END AS BIT) as IsAuthorized
+        CAST(CASE WHEN (atl.associateNum IS NOT NULL AND atl.authLevel >= @lockoutLevel) THEN 1 ELSE 0 END AS BIT) as IsAuthorized
         FROM AssociateInfo a
-        INNER JOIN CmmsToLineName ctl ON ctl.cmmsNum = @cmms
+        INNER JOIN CmmsToLineName ctl ON ctl.cmmsNum = @cmmsNum
         LEFT JOIN AssociateToLine atl ON a.associateNum = atl.associateNum AND ctl.lineName = atl.lineName
-        WHERE a.badgeNum = @badge";
+        WHERE a.badgeNum = @badgeNum";
 
         using SqlCommand cmd = new(sql, conn);
-        cmd.Parameters.AddWithValue("@badge", badgeNum);
-        cmd.Parameters.AddWithValue("@cmms", cmmsNum);
+        cmd.Parameters.AddWithValue("@badgeNum", badgeNum);
+        cmd.Parameters.AddWithValue("@cmmsNum", cmmsNum);
 
         // Set up a reader to build a record from the returned data
         using SqlDataReader reader = cmd.ExecuteReader();

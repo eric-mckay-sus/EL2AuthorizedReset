@@ -30,13 +30,13 @@ public class Associate
     [Range(1, 99999, ErrorMessage = "Badge number must be five digits")]
     [UniqueBadgeNumber]
     [Column("badgeNum")]
-    public int? BadgeNum { get; set; }
+    public int BadgeNum { get; set; }
 
     [Required(ErrorMessage = "Associate number is required")]
     [Range(1, 99999, ErrorMessage = "Associate number must be five digits")]
     [UniqueAssociateNumber]
     [Column("associateNum")]
-    public int? AssocNum { get; set; }
+    public int AssocNum { get; set; }
 
     [Required(ErrorMessage = "Associate name is required")]
     [MaxLength(32, ErrorMessage = "Associate name must be no longer than 32 characters")]
@@ -79,8 +79,9 @@ public class Associate
 /// </summary>
 public interface IAssociateLink
 {
-    int? AssocNum { get; set; }
-    string? Line { get; set; }
+    int AssocNum { get; set; }
+    string Line { get; set; }
+    byte AuthLevel { get; set; }
 }
 
 /// <summary>
@@ -92,13 +93,16 @@ public interface IAssociateLink
 public class AssociateLine : IAssociateLink
 {
     [Column("associateNum")]
-    public int? AssocNum { get; set; }
+    public int AssocNum { get; set; }
 
     [Required(ErrorMessage = "Line name is required")]
     [MaxLength(32, ErrorMessage = "Line name must be no longer than 8 characters (try truncating)")]
     [ValidateLineExists]
     [Column("lineName")]
-    public string? Line { get; set; }
+    public string Line { get; set; }
+
+    [Column("authLevel")]
+    public byte AuthLevel { get; set; }
 }
 
 /// <summary>
@@ -108,14 +112,18 @@ public class AssociateLine : IAssociateLink
 [PrimaryKey(nameof(AssocNum), nameof(Line))]
 public class AssocNameLine : IAssociateLink
 {
-    [Column("Associate Name")]
+    [Column("AssociateName")]
+    [NotDisplayed]
     public string? AssocName { get; set; }
 
-    [Column("Associate Number")]
-    public int? AssocNum { get; set; }
+    [Column("AssociateNumber")]
+    public int AssocNum { get; set; }
 
-    [Column("Authorized Line")]
-    public string? Line { get; set; }
+    [Column("AuthorizedLine")]
+    public string Line { get; set; }
+
+    [Column("AuthLevel")]
+    public byte AuthLevel { get; set; }
 }
 
 /// <summary>
@@ -150,6 +158,9 @@ public class LockoutReset
 
     [Column("CmmsNum")]
     public int CmmsNum { get; set; }
+
+    [Column("LockoutLevel")]
+    public byte LockoutLevel { get; set; }
 
     [Column("LockoutTime")]
     public DateTime LockoutTime { get; set; }
@@ -227,6 +238,9 @@ public class Lockout
 
     [Column("cmmsNum")]
     public int CmmsNum { get; set; }
+
+    [Column("lockoutLevel")]
+    public byte LockoutLevel { get; set; }
 
     [Column("reason")]
     public string Reason { get; set; }
