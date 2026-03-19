@@ -15,7 +15,12 @@
             <h5>No records matched your criteria.</h5>
         } else{
             var authorizedEntry = DataView.FirstOrDefault(x => x.IsAuthorized == true); // Works bc we're sorting by authorization descending
-            <UniversalTable T="Reset" Items="DataView" OnSort="ToggleSort" IsStale="IsStale" GetSortIcon="GetSortIcon" target="authorizedEntry" highlightStyle="table-success" />
+            <TablePresenter 
+                TRead="Reset"
+                TWrite="Reset"
+                Base="this"
+                target="authorizedEntry"
+                highlightStyle="table-success" />
         }
     }
 }

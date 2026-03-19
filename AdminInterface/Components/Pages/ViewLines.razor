@@ -28,7 +28,7 @@
 
         <div class="col-12 d-flex justify-content-end gap-3">
             <button class="btn btn-outline-secondary" @onclick="ClearAllFilters">Clear</button>
-            <button class="btn btn-primary" @onclick="LoadData">Execute</button>
+            <button class="btn btn-primary" @onclick="() => LoadData()">Execute</button>
         </div>
     </div>
 </div>
@@ -36,11 +36,10 @@
 @if (IsLoading){
     <Spinner Color="SpinnerColor.Primary" />
 } else {
-    <UniversalTable T="CmmsLine" 
-        Items="DataView" 
-        IsStale="IsStale"
-        OnSort="ToggleSort" 
-        GetSortIcon="GetSortIcon" />
+    <TablePresenter
+        TRead="CmmsLine"
+        TWrite="CmmsLine" 
+        Base="this" />
 }
 
 @code {
@@ -48,6 +47,9 @@
     protected Filter<string?> FilterLineName => GetFilter<string?>("lineName");
     protected Filter<bool?> FilterStatus => GetFilter<bool?>("status");
 
+    /// <summary>
+    /// When the page loads, set the default sort and populate the filters
+    /// </summary>
     protected override void OnInitialized()
     {
         CurrentSortColumn="IsActive";
@@ -55,6 +57,9 @@
         InitializeFilters();
     }
 
+    /// <summary>
+    /// Populate the search-by-machine filters
+    /// </summary>
     protected override void InitializeFilters()
     {
         Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
@@ -69,9 +74,6 @@
     /// <returns>The filtered query</returns>
     protected override IQueryable<CmmsLine> ApplyFilters(IQueryable<CmmsLine> query)
     {
-        foreach(var filter in Filters.Values)
-            Console.WriteLine(filter);
-
         // CMMS Number (Exact)
         if (FilterCmmsNum.IsActive)
             query = query.Where(x => x.CmmsNum == FilterCmmsNum.Value);

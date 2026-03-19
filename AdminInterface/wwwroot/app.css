@@ -67,6 +67,19 @@ h1:focus {
     justify-content: center;
 }
 
+/* Force pagination and headers to stay within the viewport */
+.pagination-container, 
+.query-builder-panel {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    bottom: 0;
+    background: white; /* Prevent table rows from showing through */
+    padding-top: 10px 0;
+    z-index: 20;
+    border-top: 1px solid #dee2e6;
+}
+
 /* Custom Data Grid Styling */
 .table-container {
     background-color: #ffffff;
