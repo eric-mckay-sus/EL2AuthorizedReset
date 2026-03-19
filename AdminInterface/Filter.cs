@@ -70,9 +70,9 @@ public class Filter<T> : IFilter
     /// <returns>Whether the value is its default (i.e. deactivated, and thus should not be used in a query)</returns>
     private static bool IsDefault(T? val) => val switch
     {
-        string s => string.IsNullOrWhiteSpace(s),
-        _ when Equals(val, default(T)) => true,
-        _ => false
+        string s => string.IsNullOrWhiteSpace(s), // Strings shouldn't be used if they're null OR whitespace
+        _ when Equals(val, default(T)) => true, // All other datatypes only use null to denote default
+        _ => false // Any value not covered by the above should be used in the query
     };
 
     public override string ToString()

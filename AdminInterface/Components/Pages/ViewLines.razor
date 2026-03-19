@@ -13,7 +13,9 @@
         </div>
         <div class="col-4">
             <label class="form-label">Status</label>
-            <select class="form-select" @bind="FilterStatus.Value">
+            <select class="form-select" 
+                    value="@FilterStatus.Value?.ToString().ToLower()"
+                    @onchange="@(e => FilterStatus.Value = ParseBool(e.Value?.ToString()))">
                 <option value="">All Records</option>
                 <option value="false">Locked out</option>
                 <option value="true">Released</option>
@@ -83,5 +85,11 @@
             query = query.Where(x => x.LineName != null && x.LineName.Contains(FilterLineName.Value!));
 
         return query;
+    }
+
+    private bool? ParseBool(string? value)
+    {
+        if (bool.TryParse(value, out var result)) return result;
+        return null;
     }
 }

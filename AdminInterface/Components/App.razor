@@ -11,13 +11,13 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="AdminInterface.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet @rendermode="new InteractiveAutoRenderMode(prerender: false)"/>
+    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)"/>
 </head>
 
 <body>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
     <script src="_content/Blazor.Bootstrap/blazor.bootstrap.js"></script>
-    <Routes @rendermode="new InteractiveAutoRenderMode(prerender: false)" />
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <script src="_framework/blazor.web.js"></script>
 </body>
 
