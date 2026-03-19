@@ -21,20 +21,17 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
     /// When the app loads, fill the filter registry and default sort
     /// </summary>
     /// <returns></returns>
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         InitializeFilters();
         CurrentSortColumn = "LockoutTime";
         SortDir = "descending";
-        await base.OnInitializedAsync();
     }
 
     /// <summary>
     /// Load the filter registry for searching the lockout/reset table
     /// </summary>
     protected override void InitializeFilters() {
-        if (_filtersInitialized) return;
-        
         Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
         Filters["reason"] = new Filter<string?>("reason", null);
         Filters["status"] = new Filter<string?>("status", null);
@@ -45,8 +42,6 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
         Filters["lockBefore"] = new Filter<DateTime?>("lockBefore", null);
         Filters["resetAfter"] = new Filter<DateTime?>("resetAfter", null);
         Filters["resetBefore"] = new Filter<DateTime?>("resetBefore", null);
-
-        _filtersInitialized = true;
     }
 
     /// <summary>
@@ -88,7 +83,7 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
         if (FilterResetBefore.IsActive)
             query = query.Where(x => x.ResetTime != null && x.ResetTime <= FilterResetBefore.Value);
 
-        return base.ApplyFilters(query);
+        return query;
     }
 
     public void HandleExpand(LockoutReset row) {

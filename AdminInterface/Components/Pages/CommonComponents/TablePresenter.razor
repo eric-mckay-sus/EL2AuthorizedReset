@@ -1,0 +1,26 @@
+@typeparam TWrite where TWrite : class, new()
+@typeparam TRead where TRead : class, new()
+
+<UniversalTable
+    Items="Base.DataView"
+    CurrentPage="Base.CurrentPage"
+    TotalPages="Base.TotalPages"
+    TotalCount="Base.TotalCount"
+    PageSize="Base.PageSize"
+    IsStale="Base.IsStale"
+    OnPageChange="Base.ChangePage"
+    OnSort="Base.ToggleSort"
+    GetSortIcon="Base.GetSortIcon"
+    OnPageSizeChange="Base.AlterPageSize" 
+    OnDelete="OnDelete"
+    OnExpand="OnExpand" />
+
+@code{
+    [Parameter, EditorRequired]
+    public EntityManagerBase<TWrite, TRead> Base { get; set; } = default!;
+
+    [Parameter] public EventCallback<TRead> OnDelete { get; set; }
+    [Parameter] public EventCallback<TRead> OnExpand { get; set; }
+    [Parameter] public TRead target { get; set; }
+    [Parameter] public string highlightStyle { get; set; }
+}

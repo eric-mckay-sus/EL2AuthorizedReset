@@ -48,7 +48,7 @@
     }
     <div class="row">
         <div class="col-6">
-            <EditForm Model="this" OnValidSubmit="LoadData">
+            <EditForm Model="this" OnValidSubmit="() => LoadData()">
                 <div class="input-group mb-2">
                     <InputText 
                         id="searchBar" 
@@ -83,9 +83,18 @@
 } else {
     @if (DataView.Count > 0) {
         @if (HandleExpand.HasDelegate){
-            <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" OnExpand="HandleExpand" />
+            <TablePresenter 
+                TWrite="Associate"
+                TRead="Associate"
+                Base="this"
+                OnDelete="HandleDelete" 
+                OnExpand="HandleExpand" />
         } else {
-            <UniversalTable T="Associate" Items="DataView" target="target" OnDelete="HandleDelete" />
+            <TablePresenter 
+            TWrite="Associate"
+            TRead="Associate"
+            Base="this"
+            OnDelete="HandleDelete" />
         }
     } else {
         <h3>No associates matched search criteria @searchText</h3>
@@ -117,9 +126,9 @@
     /// If it isn't, tell the parent to hide the associated lines
     /// </summary>
     /// <returns></returns>
-    protected override async Task LoadData()
+    protected override async Task LoadData(bool keepPage=false)
     {
-        await base.LoadData();
+        await base.LoadData(keepPage);
 
         if (target != null && !DataView.Contains(target) && !string.IsNullOrEmpty(searchText))
         {

@@ -59,11 +59,11 @@
         <Spinner Color="SpinnerColor.Secondary" />
     } else {
         @if (DataView.Count > 0) {
-            <UniversalTable
-                T="AssocNameLine"
-                Items="DataView"
-                OnDelete="HandleDelete"
-            />
+            <TablePresenter 
+            TWrite="AssociateLine"
+            TRead="AssocNameLine"
+            Base="this"
+            OnDelete="HandleDelete" />
         } else {
             <div class="text-center">
                 <h3>No lines authorized for @target.Name</h3>

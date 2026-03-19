@@ -1,9 +1,8 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace AdminInterface;
+namespace AdminInterface.Authentication;
 
 public interface IUserIdentityService
 {

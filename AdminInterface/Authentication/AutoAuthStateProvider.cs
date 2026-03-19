@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 
-namespace AdminInterface;
+namespace AdminInterface.Authentication;
 /// <summary>
 /// Used by Blazor to check authorization
 /// </summary>

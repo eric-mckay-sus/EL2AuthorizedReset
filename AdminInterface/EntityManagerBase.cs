@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
-using AdminInterface.Components.Pages;
+using AdminInterface.Components.Pages.CommonComponents;
 using System.Linq.Dynamic.Core;
 
 namespace AdminInterface;
@@ -19,12 +19,17 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
 
     // Filter registry to hold all active filters
     protected Dictionary<string, IFilter> Filters { get; set; } = [];
-    protected bool _filtersInitialized = false; // Whether the filters have been initialized yet
     protected int LastQueryHash;
-    protected bool IsStale => LastQueryHash != GetFilterStateHash(Filters);
+    public bool IsStale => LastQueryHash != GetFilterStateHash(Filters);
+
+    // Pagination variables
+    public int CurrentPage { get; set; } = 1; // Tracks the current page number (always between 1 and TotalPages, inclusive)
+    public int PageSize { get; set; } = 50; // The number of results per page
+    public int TotalCount { get; set; } // The total number of results
+    public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize); // Dynamically compute page count whenever totalCount or pageSize update
 
     protected TWrite NewItem = new(); // The item to be added (from the add form)
-    protected List<TRead> DataView = []; // The view to READ from (type may be different from the one being written)
+    public List<TRead> DataView = []; // The view to READ from (type may be different from the one being written)
     protected string? ErrorMessage; // The error message for uniqueness constraint, if applicable
     protected DeleteDialog deleteDialog = default!; // The dialog to show upon pressing the delete button for a row
     protected bool IsFormVisible = false; // Whether to show or hide the add form
@@ -110,8 +115,9 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// Load the table, applying any filters the child assigns
     /// </summary>
     /// <returns></returns>
-    protected virtual async Task LoadData()
+    protected virtual async Task LoadData(bool keepPage=false)
     {
+        if (!keepPage) CurrentPage = 1;
         // Update and show loading state
         IsLoading = true;
         StateHasChanged();
@@ -121,13 +127,17 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         // Gets all results (delayed execution)
         IQueryable<TRead> query = context.Set<TRead>();
 
-        // Apply filter(s) set by the child
+        // Apply filter(s) set by the child, count, then sort
         query = ApplyFilters(query);
-
+        TotalCount = await query.CountAsync();
         query = ApplySorting(query);
 
         // Execute here (DataView requires a list for display)
-        DataView = await query.ToListAsync();
+        DataView = await query
+                .Skip((CurrentPage - 1) * PageSize)
+                .Take(PageSize)
+                .ToListAsync();
+
         LastQueryHash = GetFilterStateHash(Filters);
         IsLoading = false;
         StateHasChanged();
@@ -269,6 +279,36 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     {
         if (CurrentSortColumn != columnName || SortDir == "none") return "↕";
         return SortDir == "ascending" ? "▲" : "▼";
+    }
+
+    /// <summary>
+    /// Jumps to the specified new page (if within bounds)
+    /// </summary>
+    /// <param name="newPage">The page number to jump to</param>
+    /// <returns></returns>
+    public async Task ChangePage(int newPage)
+    {
+        if (newPage != CurrentPage && newPage >= 1 && newPage <= TotalPages)
+        {
+            CurrentPage = newPage;
+            await LoadData(keepPage: true);
+        }
+    }
+
+    /// <summary>
+    /// Modifies the page size from PageSize to newSize
+    /// </summary>
+    /// <param name="newSize">The desired number of entries per page</param>
+    /// <returns></returns>
+    public async Task AlterPageSize(int newSize)
+    {
+        if (newSize != PageSize)
+        {
+            PageSize = newSize;
+            // Reset to page 1 because the number of pages has changed
+            CurrentPage = 1; 
+            await LoadData();
+        }
     }
 
     /// <summary>

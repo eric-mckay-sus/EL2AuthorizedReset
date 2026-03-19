@@ -2,7 +2,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
-namespace AdminInterface;
+namespace AdminInterface.Authentication;
 /// <summary>
 /// Used by HTTP to check authorization
 /// </summary>
