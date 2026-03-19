@@ -1,6 +1,7 @@
 using AdminInterface.Components;
 using Microsoft.EntityFrameworkCore;
 using AdminInterface;
+using AdminInterface.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);

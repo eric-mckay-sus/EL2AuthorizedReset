@@ -1,3 +1,87 @@
 @page "/view-lines"
+@inherits EntityManagerBase<CmmsLine, CmmsLine>
 
-<h5>This is going to just inherit EntityManagerBase and it's going to work and it's going to be great</h5>
+<PageTitle>Line Checkup</PageTitle>
+
+<h3>View All Lines</h3>
+
+<div class="filter-panel mb-3 p-3 border rounded bg-light">
+    <div class="row g-3">
+        <div class="col-4">
+            <label class="form-label">CMMS #</label>
+            <input type="number" class="form-control" @bind-value="FilterCmmsNum.Value" @bind-value:event="oninput" placeholder="Search machine ID..." />
+        </div>
+        <div class="col-4">
+            <label class="form-label">Status</label>
+            <select class="form-select" @bind="FilterStatus.Value">
+                <option value="">All Records</option>
+                <option value="false">Locked out</option>
+                <option value="true">Released</option>
+            </select>
+        </div>
+        <div class="col-4">
+            <label class="form-label">Line Name</label>
+            <input type="text" class="form-control" @bind-value="FilterLineName.Value" @bind-value:event="oninput" placeholder="e.g. F24" />
+        </div>
+
+        <div class="col-12 d-flex justify-content-end gap-3">
+            <button class="btn btn-outline-secondary" @onclick="ClearAllFilters">Clear</button>
+            <button class="btn btn-primary" @onclick="LoadData">Execute</button>
+        </div>
+    </div>
+</div>
+
+@if (IsLoading){
+    <Spinner Color="SpinnerColor.Primary" />
+} else {
+    <UniversalTable T="CmmsLine" 
+        Items="DataView" 
+        IsStale="IsStale"
+        OnSort="ToggleSort" 
+        GetSortIcon="GetSortIcon" />
+}
+
+@code {
+    protected Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
+    protected Filter<string?> FilterLineName => GetFilter<string?>("lineName");
+    protected Filter<bool?> FilterStatus => GetFilter<bool?>("status");
+
+    protected override void OnInitialized()
+    {
+        CurrentSortColumn="IsActive";
+        SortDir = "ascending";
+        InitializeFilters();
+    }
+
+    protected override void InitializeFilters()
+    {
+        Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
+        Filters["lineName"] = new Filter<string?>("lineName", null);
+        Filters["status"] = new Filter<bool?>("status", null);
+    }
+
+    /// <summary>
+    /// Apply all filters with input in the filter panel
+    /// </summary>
+    /// <param name="query">The query to which the filters should be applied</param>
+    /// <returns>The filtered query</returns>
+    protected override IQueryable<CmmsLine> ApplyFilters(IQueryable<CmmsLine> query)
+    {
+        foreach(var filter in Filters.Values)
+            Console.WriteLine(filter);
+
+        // CMMS Number (Exact)
+        if (FilterCmmsNum.IsActive)
+            query = query.Where(x => x.CmmsNum == FilterCmmsNum.Value);
+
+        // Status (Exact match from dropdown)
+        if (FilterStatus.IsActive)
+            query = query.Where(x => x.IsActive == FilterStatus.Value);
+
+        // Line Name (Partial match)
+        if (FilterLineName.IsActive)
+            query = query.Where(x => x.LineName != null && x.LineName.Contains(FilterLineName.Value!));
+
+        return query;
+    }
+}

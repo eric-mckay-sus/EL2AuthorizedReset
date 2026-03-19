@@ -19,7 +19,6 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
 
     // Filter registry to hold all active filters
     protected Dictionary<string, IFilter> Filters { get; set; } = [];
-    protected bool _filtersInitialized = false; // Whether the filters have been initialized yet
     protected int LastQueryHash;
     protected bool IsStale => LastQueryHash != GetFilterStateHash(Filters);
 

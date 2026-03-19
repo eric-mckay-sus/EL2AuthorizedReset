@@ -10,7 +10,6 @@ namespace AdminInterface;
 public class Filter<T> : IFilter
 {
     public string Key { get; set; } // The name of this filter (for self-identification)
-    public Action? OnChanged { get; set; } // The action to perform when this filter is updated
     public bool IsActive { get; set; } // Whether this filter is being used in the current query (thus its value should be used). Automatically updated on value change
 
     private T? _value; // The internal value held by the filter
@@ -21,7 +20,6 @@ public class Filter<T> : IFilter
         {
             _value = value;
             IsActive = !IsDefault(value);
-            OnChanged?.Invoke();
         }
     }
 
