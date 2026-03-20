@@ -122,10 +122,10 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         IsLoading = true;
         StateHasChanged();
 
-        using var context = DbFactory.CreateDbContext();
+        using var context = await DbFactory.CreateDbContextAsync();
 
         // Gets all results (delayed execution)
-        IQueryable<TRead> query = context.Set<TRead>();
+        IQueryable<TRead> query = context.Set<TRead>().AsNoTracking();
 
         // Apply filter(s) set by the child, count, then sort
         query = ApplyFilters(query);
@@ -158,7 +158,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// <summary>
     /// Remove add form flag, clear input and error message
     /// </summary>
-    protected void CancelForm() 
+    protected virtual void CancelForm() 
     {
         IsFormVisible = false;
         NewItem = new TWrite();

@@ -82,20 +82,13 @@
     <Spinner Color="SpinnerColor.Primary" />
 } else {
     @if (DataView.Count > 0) {
-        @if (HandleExpand.HasDelegate){
-            <TablePresenter 
-                TWrite="Associate"
-                TRead="Associate"
-                Base="this"
-                OnDelete="HandleDelete" 
-                OnExpand="HandleExpand" />
-        } else {
-            <TablePresenter 
+        <TablePresenter 
             TWrite="Associate"
             TRead="Associate"
             Base="this"
-            OnDelete="HandleDelete" />
-        }
+            target="target"
+            OnDelete="HandleDelete" 
+            OnExpand="HandleExpand" />
     } else {
         <h3>No associates matched search criteria @searchText</h3>
     }
@@ -152,7 +145,7 @@
         } else {
             query = query.Where(a => a.Name.Contains(searchText));
         }
-        return query; // to satisfy compiler ig
+        return query;
     }
 
     /// <summary>

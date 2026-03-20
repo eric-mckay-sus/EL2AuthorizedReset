@@ -30,13 +30,13 @@ public class Associate
     [Range(1, 99999, ErrorMessage = "Badge number must be five digits")]
     [UniqueBadgeNumber]
     [Column("badgeNum")]
-    public int? BadgeNum { get; set; }
+    public int BadgeNum { get; set; }
 
     [Required(ErrorMessage = "Associate number is required")]
     [Range(1, 99999, ErrorMessage = "Associate number must be five digits")]
     [UniqueAssociateNumber]
     [Column("associateNum")]
-    public int? AssocNum { get; set; }
+    public int AssocNum { get; set; }
 
     [Required(ErrorMessage = "Associate name is required")]
     [MaxLength(32, ErrorMessage = "Associate name must be no longer than 32 characters")]
@@ -79,8 +79,9 @@ public class Associate
 /// </summary>
 public interface IAssociateLink
 {
-    int? AssocNum { get; set; }
-    string? Line { get; set; }
+    int AssocNum { get; set; }
+    string Line { get; set; }
+    byte AuthLevel { get; set; }
 }
 
 /// <summary>
@@ -92,13 +93,45 @@ public interface IAssociateLink
 public class AssociateLine : IAssociateLink
 {
     [Column("associateNum")]
-    public int? AssocNum { get; set; }
+    public int AssocNum { get; set; }
 
     [Required(ErrorMessage = "Line name is required")]
     [MaxLength(32, ErrorMessage = "Line name must be no longer than 8 characters (try truncating)")]
     [ValidateLineExists]
     [Column("lineName")]
-    public string? Line { get; set; }
+    public string Line { get; set; }
+
+    [Range(0, 255, ErrorMessage = "Authorization level must be between 0 and 255 (inclusive)")]
+    [Column("authLevel")]
+    public byte AuthLevel { get; set; }
+
+    [NotMapped] // Tell EF Core to ignore this
+    public bool IsNewRecord { get; set; } = true;
+
+    /// <summary>
+    /// Matches equality by PK used by EF Core
+    /// </summary>
+    /// <param name="obj">The object to compare to</param>
+    /// <returns>Whether this AssociateLine is equal to obj</returns>
+    public override bool Equals(object? obj)
+    {
+        if (obj is AssociateLine other)
+        {
+            Console.WriteLine($"this:{this}, other:{other}");
+            return AssocNum == other.AssocNum && Line == other.Line;
+        }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(AssocNum, Line, AuthLevel);
+    }
+
+    public override string ToString()
+    {
+        return $"AssocNum: {AssocNum}, LineName: {Line}, AuthLevel: {AuthLevel}";
+    }
 }
 
 /// <summary>
@@ -108,14 +141,18 @@ public class AssociateLine : IAssociateLink
 [PrimaryKey(nameof(AssocNum), nameof(Line))]
 public class AssocNameLine : IAssociateLink
 {
-    [Column("Associate Name")]
+    [Column("AssociateName")]
+    [NotDisplayed]
     public string? AssocName { get; set; }
 
-    [Column("Associate Number")]
-    public int? AssocNum { get; set; }
+    [Column("AssociateNumber")]
+    public int AssocNum { get; set; }
 
-    [Column("Authorized Line")]
-    public string? Line { get; set; }
+    [Column("AuthorizedLine")]
+    public string Line { get; set; }
+
+    [Column("AuthLevel")]
+    public byte AuthLevel { get; set; }
 }
 
 /// <summary>
@@ -151,6 +188,9 @@ public class LockoutReset
     [Column("CmmsNum")]
     public int CmmsNum { get; set; }
 
+    [Column("LockoutLevel")]
+    public byte LockoutLevel { get; set; }
+
     [Column("LockoutTime")]
     public DateTime LockoutTime { get; set; }
 
@@ -169,6 +209,20 @@ public class LockoutReset
     [NotDisplayed]
     [Column("ResetId")]
     public int? ResetId { get; set; }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is LockoutReset other)
+        {
+            return LockoutId == other.LockoutId && ResetId == other.ResetId;
+        }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return LockoutId;
+    }
 }
 
 /// <summary>
@@ -227,6 +281,9 @@ public class Lockout
 
     [Column("cmmsNum")]
     public int CmmsNum { get; set; }
+
+    [Column("lockoutLevel")]
+    public byte LockoutLevel { get; set; }
 
     [Column("reason")]
     public string Reason { get; set; }
