@@ -88,8 +88,8 @@ class AuthorizeReset
         // 4. Get lines for that associate (indexed on associateNum)
         // 5. Verify that associate has line and sufficient auth level
         string sql = @"
-        DECLARE @lockoutLevel TINYINT
-        SELECT TOP 1 @lockoutLevel=lockoutLevel FROM HistoricalLockouts
+        DECLARE @lockoutLevel TINYINT = 0
+        SELECT TOP 1 @lockoutLevel = lockoutLevel FROM HistoricalLockouts
 		WHERE cmmsNum = @cmmsNum
 			AND requestTime <= GETDATE()
 			AND resolvedResetId IS NULL
