@@ -4,9 +4,9 @@
 
 <PageTitle>Manage Lines</PageTitle>
 
-@if (target != null){ @* For prerendering cases*@
+@if (targetAssociate != null){ @* For prerendering cases*@
     <div class="d-flex justify-content-between mb-3">
-        <h2>Manage Lines for <strong>@target.Name</strong></h2>
+        <h2>Manage Lines for <strong>@targetAssociate.Name</strong></h2>
         @if (OnClose.HasDelegate){
             <button type="button" class="btn-close" aria-label="Close" @onclick="OnClose"></button>
         }
@@ -18,29 +18,42 @@
                 <DataAnnotationsValidator />
 
                 <div class="form-container">
-                    <h5 class="form-title">Authorize New Line for @target.Name</h5>
+                    <h5 class="form-title">
+                        @(isEditing ? $"Edit Authorization: {NewItem.Line}" : $"Authorize New Line for {targetAssociate.Name}")
+                    </h5>
 
-                    <div>
-                        <label for="lineName" class="form-label">Line Name:</label>
-                        <InputText id="lineName"
-                                   @bind-Value="NewItem.Line"
-                                   class="form-control"
-                                   list="lineOptions"
-                                   autocomplete="off" />
+                    <div class="row">
+                        <div class="col-8">
+                            <label for="lineName" class="form-label">Line Name:</label>
+                            <InputText id="lineName"
+                                    @bind-Value="NewItem.Line"
+                                    class="form-control"
+                                    list="lineOptions"
+                                    disabled="@isEditing"
+                                    autocomplete="off" />
 
-                        <datalist id="lineOptions">
-                            @foreach (var line in allAvailableLines)
-                            {
-                                <option value="@line" />
-                            }
-                        </datalist>
-                        <ValidationMessage For="@(() => NewItem.Line)" />
+                            <datalist id="lineOptions">
+                                @foreach (var line in allAvailableLines)
+                                {
+                                    <option value="@line" />
+                                }
+                            </datalist>
+                            <ValidationMessage For="@(() => NewItem.Line)" />
+                        </div>
+
+                        <div class="col-4">
+                            <label for="authLevel" class="form-label">Authorization Level:</label>
+                            <input id="authLevel" class="form-control" type="number" min="0" max="255"
+                                        @bind="NewItem.AuthLevel" />
+
+                        </div>
                     </div>
 
                     <div class="form-actions d-flex justify-content-center gap-4">
                         <button type="button" class="btn btn-outline-secondary btn-lg me-2" @onclick="CancelForm">Cancel</button>
-                        <button type="submit" class="btn btn-primary btn-lg px-4">
-                            <i class="bi bi-plus-lg"></i> Authorize @(string.IsNullOrEmpty(NewItem.Line) ? "Line" : NewItem.Line) for @target.Name
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi @(isEditing ? "bi-floppy" : "bi-plus-lg")"></i> 
+                            @(isEditing ? "Update Authorization" : "Authorize Line")
                         </button>
                     </div>
                 </div>
@@ -50,7 +63,7 @@
     } else {
         <div class="d-flex justify-content-center mb-3">
             <button class="btn btn-success" @onclick="ShowForm">
-                <i class="bi bi-plus-lg"></i> Add New Line for @target.Name
+                <i class="bi bi-plus-lg"></i> Add New Line for @targetAssociate.Name
             </button>
         </div>
     }
@@ -63,10 +76,12 @@
             TWrite="AssociateLine"
             TRead="AssocNameLine"
             Base="this"
+            target="targetPermission"
+            OnExpand="HandleExpand"
             OnDelete="HandleDelete" />
         } else {
             <div class="text-center">
-                <h3>No lines authorized for @target.Name</h3>
+                <h3>No lines authorized for @targetAssociate.Name</h3>
             </div>
         }
     }
@@ -75,10 +90,12 @@
 }
 
 @code {
-    [Parameter, EditorRequired] public Associate target { get; set; }
+    [Parameter, EditorRequired] public Associate targetAssociate { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Inject] private IMemoryCache _cache { get; set; } = default!;
+    private AssocNameLine? targetPermission { get; set; }
     private List<string> allAvailableLines = [];
+    private bool isEditing = false;
 
     /// <summary>
     /// When the page is initialized, create a cache of all available lines for the autofill
@@ -103,7 +120,7 @@
     /// </summary>
     /// <returns></returns>
     protected override async Task OnParametersSetAsync(){
-        if (target == null)
+        if (targetAssociate == null)
         {
             DataView.Clear();
             return;
@@ -116,9 +133,11 @@
     /// Creates a new object for the add form with the target associate number
     /// </summary>
     private void ResetNewItem(){
+        targetPermission = null;
         NewItem = new AssociateLine();
-        if (target != null){
-            NewItem.AssocNum = target.AssocNum;
+        NewItem.IsNewRecord = true;
+        if (targetAssociate != null){
+            NewItem.AssocNum = targetAssociate.AssocNum;
         }
     }
 
@@ -129,10 +148,30 @@
     /// <returns>An IQueryable with only table entries matching the target associate</returns>
     protected override IQueryable<AssocNameLine> ApplyFilters(IQueryable<AssocNameLine> query)
     {
-        if (target == null) return query.Where(x => false); // Return empty if no associate selected
+        if (targetAssociate == null) return query.Where(x => false); // Return empty if no associate selected
 
         // Filter the view by the selected associate number
-        return query.Where(x => x.AssocNum == target.AssocNum);
+        return query.Where(x => x.AssocNum == targetAssociate.AssocNum);
+    }
+
+    private void HandleExpand(AssocNameLine anl){
+        // Map the read-only view item to the writeable model
+        NewItem = new AssociateLine {
+            AssocNum = anl.AssocNum,
+            Line = anl.Line,
+            AuthLevel = anl.AuthLevel,
+            IsNewRecord=false // bypass PK validation
+        };
+        targetPermission = anl;
+        isEditing = true;
+        IsFormVisible = true;
+        StateHasChanged();
+    }
+
+    protected override void CancelForm(){
+        isEditing = false;
+        base.CancelForm();
+        ResetNewItem();
     }
 
     /// <summary>
@@ -156,15 +195,32 @@
     /// <summary>
     /// Because the user doesn't provide the associate number in the EditForm component,
     /// we need to override the submitter to re-instantiate the object and force update the view so Blazor doesn't take shortcuts
+    /// as well as provide new logic for submitting an edit
     /// </summary>
     /// <returns></returns>
     protected override async Task HandleValidSubmit()
     {
-        // Perform the base save logic (save new associate, call LoadData, hide associate addition form)
-        await base.HandleValidSubmit();
+        ErrorMessage = null;
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
 
-        // Now prime the next form and inform Blazor to refresh the form binding
-        ResetNewItem();
-        StateHasChanged();
+            if (isEditing) // If coming from an edit, use UPDATE
+                context.AssociateToLine.Update(NewItem);
+            else // If coming from an add, use INSERT
+                context.AssociateToLine.Add(NewItem);
+
+            await context.SaveChangesAsync();
+            
+            // Cleanup state
+            isEditing = false;
+            IsFormVisible = false;
+            ResetNewItem(); // Clears inputs for the next action
+            await LoadData();
+        }
+        catch (Exception)
+        {
+            ErrorMessage = "Could not save changes. Ensure the line isn't already authorized.";
+        }
     }
 }

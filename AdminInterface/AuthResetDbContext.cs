@@ -101,8 +101,37 @@ public class AssociateLine : IAssociateLink
     [Column("lineName")]
     public string Line { get; set; }
 
+    [Range(0, 255, ErrorMessage = "Authorization level must be between 0 and 255 (inclusive)")]
     [Column("authLevel")]
     public byte AuthLevel { get; set; }
+
+    [NotMapped] // Tell EF Core to ignore this
+    public bool IsNewRecord { get; set; } = true;
+
+    /// <summary>
+    /// Matches equality by PK used by EF Core
+    /// </summary>
+    /// <param name="obj">The object to compare to</param>
+    /// <returns>Whether this AssociateLine is equal to obj</returns>
+    public override bool Equals(object? obj)
+    {
+        if (obj is AssociateLine other)
+        {
+            Console.WriteLine($"this:{this}, other:{other}");
+            return AssocNum == other.AssocNum && Line == other.Line;
+        }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(AssocNum, Line, AuthLevel);
+    }
+
+    public override string ToString()
+    {
+        return $"AssocNum: {AssocNum}, LineName: {Line}, AuthLevel: {AuthLevel}";
+    }
 }
 
 /// <summary>
@@ -180,6 +209,20 @@ public class LockoutReset
     [NotDisplayed]
     [Column("ResetId")]
     public int? ResetId { get; set; }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is LockoutReset other)
+        {
+            return LockoutId == other.LockoutId && ResetId == other.ResetId;
+        }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return LockoutId;
+    }
 }
 
 /// <summary>

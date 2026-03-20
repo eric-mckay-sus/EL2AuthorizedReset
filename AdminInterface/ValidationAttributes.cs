@@ -90,12 +90,13 @@ public class ValidateLineAssignedToAssociateAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
-        var dbFactory = validationContext.GetService<IDbContextFactory<AuthResetDbContext>>();
         var al = (AssociateLine)validationContext.ObjectInstance;
-
+        if(!al.IsNewRecord) return ValidationResult.Success; // immediately return if updating
+        
+        var dbFactory = validationContext.GetService<IDbContextFactory<AuthResetDbContext>>();
         using var context = dbFactory!.CreateDbContext();
 
-        // PK Check: Is this pair already linked?
+        // PK Check: Is this pair already linked with this auth level?
         if (context.AssociateToLine.Any(x => x.AssocNum == al.AssocNum && x.Line == al.Line))
             return new ValidationResult("This associate is already assigned to this line.", [nameof(AssociateLine.Line)]);
 

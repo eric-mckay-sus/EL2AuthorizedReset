@@ -5,14 +5,14 @@
 <PageTitle>Manage</PageTitle>
 
 <div class="row overflow-hidden flex-nowrap">
-    @* Split screen gives the associate table half screen, otherwise fullscreen *@
+    @* Split screen when expanded, otherwise fullscreen the associate table *@
     <div class="@(isTargeting ? "col-7" : "col-12") transition-width">
         <ManageAssociates target="targeted" HandleExpand="HandleExpand" OnItemChanged="HandleAssociateNotShown"/>
     </div>
     <div class="@(isTargeting ? "col-5" : "col-0") transition-width overflow-hidden" 
          style="@(isTargeting ? "" : "display:none;")">
             @if (isTargeting) {
-                <ManageLines target="targeted" OnClose="HandleClose" />
+                <ManageLines targetAssociate="targeted" OnClose="HandleClose" />
             }
     </div>
 </div>
