@@ -53,6 +53,7 @@
                     <InputText 
                         id="searchBar" 
                         @bind-Value="searchText"
+                        @onblur="HandleBlur"
                         class="form-control" 
                         placeholder="Search by associate name or number"
                         autocomplete="off" />
@@ -90,7 +91,7 @@
             OnDelete="HandleDelete" 
             OnExpand="HandleExpand" />
     } else {
-        <h3>No associates matched search criteria @searchText</h3>
+        <h3>No associates @(searchingInt ? $"with associate number \"{searchText}\"" : $"with name containing \"{searchText}\"")</h3>
     }
 }
 
@@ -98,6 +99,7 @@
 
 @code{
     private string searchText = "";
+    private bool searchingInt => int.TryParse(searchText, out _);
     [Parameter] public EventCallback<Associate> HandleExpand { get; set; }
     [Parameter] public Associate? target { get; set; }
 
@@ -108,9 +110,22 @@
     protected override async Task OnParametersSetAsync()
     {
         
-        if (DataView.Count == 0) 
+        if (TotalCount == 0) 
         {
             await base.OnParametersSetAsync();
+        }
+    }
+
+    /// <summary>
+    /// If the user leaves the search bar and it is empty, 
+    /// reload the data to show the full list.
+    /// </summary>
+    private async Task HandleBlur()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            // In this state, the user intent is the same as ClearSearchBar.
+            await LoadData();
         }
     }
 

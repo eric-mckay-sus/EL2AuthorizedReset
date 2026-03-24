@@ -45,7 +45,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// </summary>
     /// <param name="filterDict">A dictionary of keys mapped to filters</param>
     /// <returns>A value representing the state of the filters for the input dictionary</returns>
-    public int GetFilterStateHash(Dictionary<string, IFilter> filterDict) {
+    public virtual int GetFilterStateHash(Dictionary<string, IFilter> filterDict) {
         unchecked // Tells the compiler to simply truncate the calculation instead of throwing an exception for integer overflow
         {
             int hash = 17;

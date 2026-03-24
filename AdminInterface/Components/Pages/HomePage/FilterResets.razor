@@ -4,7 +4,7 @@
     <div class="d-flex justify-content-between mb-3">
         <h5>CMMS #@target.CmmsNum reset requests for lockout at @target.LockoutTime</h5>
         @if (OnClose.HasDelegate){
-            <button type="button" class="btn-close" aria-label="Close" @onclick="OnClose"></button>
+            <button type="button" class="btn-close" title="Close reset history split screen" @onclick="OnClose"></button>
         }
     </div>
 

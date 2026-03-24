@@ -19,7 +19,23 @@
                 <option value="Released">Released</option>
             </select>
         </div>
-        <div class="col-3">
+        <div class="col-2">
+            <label class="form-label">Lockout Level</label>
+            <div class="input-group">
+                <button class="btn btn-secondary" 
+                        type="button" 
+                        @onclick="() => lockoutLevelGreaterThan = !lockoutLevelGreaterThan"
+                        title="@(lockoutLevelGreaterThan ? "Search higher lockout level" : "Search lower lockout level")">
+                    @if (lockoutLevelGreaterThan) {
+                        <span class="fw-bold">&ge;</span>
+                    } else {
+                        <span class="fw-bold">&le;</span>
+                    }
+                </button>
+                <input type="number" class="form-control" @bind-value="FilterLockoutLevel.Value" @bind-value:event="oninput" placeholder="Filter lockout level..." />
+            </div>
+        </div>
+        <div class="col-2">
             <label class="form-label">Reason</label>
             <input type="text" class="form-control" @bind-value="FilterReason.Value" @bind-value:event="oninput" placeholder="Fault description..." />
         </div>

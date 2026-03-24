@@ -98,7 +98,7 @@ public class ValidateLineAssignedToAssociateAttribute : ValidationAttribute
 
         // PK Check: Is this pair already linked with this auth level?
         if (context.AssociateToLine.Any(x => x.AssocNum == al.AssocNum && x.Line == al.Line))
-            return new ValidationResult("This associate is already assigned to this line.", [nameof(AssociateLine.Line)]);
+            return new ValidationResult("This associate is already assigned to this line. If you meant to update their auth level, please expand its row.", [nameof(AssociateLine.Line)]);
 
         return ValidationResult.Success;
     }

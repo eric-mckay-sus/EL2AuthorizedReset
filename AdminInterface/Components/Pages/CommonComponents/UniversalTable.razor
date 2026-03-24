@@ -34,7 +34,7 @@
                     </div>
                     <span class="text-muted ms-2">of @TotalPages</span>
                 </div>
-                <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                <li class="page-item @(CurrentPage == 1 ? "disabled" : "") me-2">
                     <button class="btn btn-outline-secondary" @onclick="() => OnPageChange.InvokeAsync(CurrentPage - 1)">&laquo; Previous</button>
                 </li>
                 <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
@@ -118,7 +118,7 @@
 
         // Priority 2: The row the user clicked to "watch"
         if (item.Equals(_attentionItem)) 
-            return "table-secondary cursor-pointer";
+            return "table-active cursor-pointer";
 
         return "cursor-pointer";
     }

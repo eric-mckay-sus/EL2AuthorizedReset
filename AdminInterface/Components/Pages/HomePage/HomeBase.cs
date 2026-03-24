@@ -1,9 +1,11 @@
+
 namespace AdminInterface.Components.Pages.HomePage;
 public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
 {
     // Filter accessors for cleaner HTML
     protected Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
     protected Filter<string?> FilterReason => GetFilter<string?>("reason");
+    protected Filter<int?> FilterLockoutLevel => GetFilter<int?>("lockoutLevel");
     protected Filter<string?> FilterStatus => GetFilter<string?>("status");
     protected Filter<string?> FilterLineName => GetFilter<string?>("lineName");
     protected Filter<string?> FilterResetter => GetFilter<string?>("resetter");
@@ -16,6 +18,7 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
 
     protected LockoutReset? target;
     protected bool isTargeting = false;
+    protected bool lockoutLevelGreaterThan = true;
 
     /// <summary>
     /// When the app loads, fill the filter registry and default sort
@@ -34,6 +37,7 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
     protected override void InitializeFilters() {
         Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
         Filters["reason"] = new Filter<string?>("reason", null);
+        Filters["lockoutLevel"] = new Filter<int?>("lockoutLevel", null);
         Filters["status"] = new Filter<string?>("status", null);
         Filters["lineName"] = new Filter<string?>("lineName", null);
         Filters["resetter"] = new Filter<string?>("resetter", null);
@@ -42,6 +46,15 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
         Filters["lockBefore"] = new Filter<DateTime?>("lockBefore", null);
         Filters["resetAfter"] = new Filter<DateTime?>("resetAfter", null);
         Filters["resetBefore"] = new Filter<DateTime?>("resetBefore", null);
+    }
+
+    public override int GetFilterStateHash(Dictionary<string, IFilter> filterDict)
+    {
+        int hash = base.GetFilterStateHash(filterDict);
+
+        if (FilterLockoutLevel.IsActive)
+            hash *= 31 + lockoutLevelGreaterThan.GetHashCode();
+        return hash;
     }
 
     /// <summary>
@@ -62,6 +75,15 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
         // Reason (Partial match)
         if (FilterReason.IsActive)
             query = query.Where(x => x.Reason.Contains(FilterReason.Value!));
+
+        // Lockout Level (< or >)
+        if (FilterLockoutLevel.IsActive)
+        {
+            if(lockoutLevelGreaterThan)
+                query = query.Where(x => x.LockoutLevel >= FilterLockoutLevel.Value);
+            else
+                query = query.Where(x => x.LockoutLevel <= FilterLockoutLevel.Value);
+        }
 
         // Line Name (Partial match)
         if (FilterLineName.IsActive)

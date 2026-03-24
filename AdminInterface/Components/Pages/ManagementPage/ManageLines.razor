@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between mb-3">
         <h2>Manage Lines for <strong>@targetAssociate.Name</strong></h2>
         @if (OnClose.HasDelegate){
-            <button type="button" class="btn-close" aria-label="Close" @onclick="OnClose"></button>
+            <button type="button" class="btn-close" title="Close line management split screen" @onclick="OnClose"></button>
         }
     </div>
 
@@ -61,6 +61,32 @@
             <ErrorDisplay ErrorMessage="@ErrorMessage" />
         </div>
     } else {
+        <div class="row">
+            <div class="col-6">
+                <EditForm Model="this" OnValidSubmit="() => LoadData()">
+                    <div class="input-group mb-2">
+                        <InputText 
+                            id="searchBar" 
+                            @bind-Value="searchText"
+                            @onblur="HandleBlur"
+                            class="form-control" 
+                            placeholder="Search by line name"
+                            autocomplete="off" />
+                            @if (!string.IsNullOrEmpty(searchText))
+                            {
+                                <span class="input-group-text clear-addon">
+                                    <button type="button" class="btn-close" aria-label="Clear" 
+                                        @onclick="ClearSearchBar" 
+                                        style="font-size: 0.8rem;"></button>
+                                </span>
+                            }
+                        <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                        <i class="bi bi-arrow-right" style="font-size: 1.5rem;"></i></button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+
         <div class="d-flex justify-content-center mb-3">
             <button class="btn btn-success" @onclick="ShowForm">
                 <i class="bi bi-plus-lg"></i> Add New Line for @targetAssociate.Name
@@ -71,7 +97,7 @@
     @if (IsLoading){
         <Spinner Color="SpinnerColor.Secondary" />
     } else {
-        @if (DataView.Count > 0) {
+        @if (TotalCount > 0) {
             <TablePresenter 
             TWrite="AssociateLine"
             TRead="AssocNameLine"
@@ -80,9 +106,16 @@
             OnExpand="HandleExpand"
             OnDelete="HandleDelete" />
         } else {
-            <div class="text-center">
-                <h3>No lines authorized for @targetAssociate.Name</h3>
-            </div>
+            @if (string.IsNullOrEmpty(searchText)){
+                <div class="text-center">
+                    <h3>No lines authorized for @targetAssociate.Name</h3>
+                </div>
+            } else {
+                <div class="text-center">
+                    <h3>No lines authorized for @targetAssociate.Name matching "@searchText"</h3>
+                </div>
+            }
+            
         }
     }
 
@@ -96,6 +129,7 @@
     private AssocNameLine? targetPermission { get; set; }
     private List<string> allAvailableLines = [];
     private bool isEditing = false;
+    private string searchText = "";
 
     /// <summary>
     /// When the page is initialized, create a cache of all available lines for the autofill
@@ -130,6 +164,19 @@
     }
 
     /// <summary>
+    /// If the user leaves the search bar and it is empty, 
+    /// reload the data to show the full list.
+    /// </summary>
+    private async Task HandleBlur()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            // In this state, the user intent is the same as ClearSearchBar.
+            await LoadData();
+        }
+    }
+
+    /// <summary>
     /// Creates a new object for the add form with the target associate number
     /// </summary>
     private void ResetNewItem(){
@@ -149,6 +196,9 @@
     protected override IQueryable<AssocNameLine> ApplyFilters(IQueryable<AssocNameLine> query)
     {
         if (targetAssociate == null) return query.Where(x => false); // Return empty if no associate selected
+
+        // Filter by line name
+        query = query.Where(a => a.Line.Contains(searchText));
 
         // Filter the view by the selected associate number
         return query.Where(x => x.AssocNum == targetAssociate.AssocNum);
@@ -222,5 +272,14 @@
         {
             ErrorMessage = "Could not save changes. Ensure the line isn't already authorized.";
         }
+    }
+
+    /// <summary>
+    /// Clear the search bar, then reload the table for the empty query
+    /// </summary>
+    /// <returns></returns>
+    protected async Task ClearSearchBar(){
+        searchText = "";
+        await LoadData();
     }
 }
