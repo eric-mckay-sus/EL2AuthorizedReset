@@ -9,7 +9,7 @@
     </div>
     <label class="form-label">Denial Type</label>
     <select class="form-select mb-3" 
-            value="@FilterDenialType.Value" 
+            value="@FilterDenialType.Value?.ToString().ToLower()" 
             title="Filter by reset requests from associates with insufficent auth level or without privileges on that line altogether"
             @onchange="ChangeDenialType">
         <option value="">All Records</option>
@@ -85,7 +85,7 @@
     /// <returns></returns>
     private async Task ChangeDenialType(ChangeEventArgs e){
         string val = e.Value?.ToString();
-        FilterDenialType.Value = string.IsNullOrEmpty(val) ? null : bool.Parse(val); 
+        FilterDenialType.Value = string.IsNullOrWhiteSpace(val) ? null : bool.Parse(val); 
         await LoadData();
     }
 }
