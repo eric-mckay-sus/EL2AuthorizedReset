@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using ENV=System.Environment;
 
 namespace AdminInterface.Authentication;
 
@@ -11,8 +12,6 @@ public interface IUserIdentityService
 
 public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory, IMemoryCache cache) : IUserIdentityService
 {
-    // This is fragile, but more secure than simply getting the last 4-5 characters and parsing as an int
-    private static readonly string[] stanleyPrefixes = ["SUSU", "SUSD"]; // The prefixes to strip from the username to get the associate number. Put shorter substrings (e.g. SUS for these two) near the end if needed.
 
     /// <summary>
     /// Gets the authentication state, which can be one of three things:
@@ -24,7 +23,7 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
     public async Task<ClaimsPrincipal> GetUserPrincipalAsync()
     {
         // Get the username from the system (e.g. SUSU1057, SUSD5938)
-        string associateString = Environment.UserName;
+        string associateString = ENV.UserName;
         string cacheKey = $"UserPrincipal_{associateString}";
 
         // If there's an identity stored in the cache, use that
@@ -33,9 +32,22 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
             return cachedPrincipal;
         }
 
-        // Check each prefix, attempting a replace on each one (hence the "shorter substring" restriction above)
-        foreach (string prefix in stanleyPrefixes) 
-            associateString = associateString.Replace(prefix, "");
+        // Check domain and name, verify that they match for SUS (not trivial to trick the environment variables)
+        #if WINDOWS // 99% chance it goes here
+        string[] domainAndUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\');
+        string domain = split[0];
+        associateString = split[1];
+        if (!(domain.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+        {
+            return new(new ClaimsIdentity());
+        }
+        #else // but fall back to environment variables
+        if (!(ENV.UserDomainName.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+        {
+            return new(new ClaimsIdentity());
+        }
+        #endif
+        associateString = associateString[4..]; // trim the first four characters (SUSU, but also works for SUSD if an IT person wanted to peek)
 
         ClaimsPrincipal principal;
         // Extract associate number from remaining (hopefully all numeric) characters
