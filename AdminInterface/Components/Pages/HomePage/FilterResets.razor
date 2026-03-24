@@ -7,6 +7,15 @@
             <button type="button" class="btn-close" title="Close reset history split screen" @onclick="OnClose"></button>
         }
     </div>
+    <label class="form-label">Denial Type</label>
+    <select class="form-select mb-3" 
+            value="@FilterDenialType.Value" 
+            title="Filter by reset requests from associates with insufficent auth level or without privileges on that line altogether"
+            @onchange="ChangeDenialType">
+        <option value="">All Records</option>
+        <option value="true">Auth Level</option>
+        <option value="false">Line Privilege</option>
+    </select>
 
     @if (IsLoading){
         <Spinner Color="SpinnerColor.Primary" />
@@ -28,11 +37,20 @@
 @code {
     [Parameter] public LockoutReset target { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-
+    private Filter<bool?> FilterDenialType => GetFilter<bool?>("denialType");
+    /// <summary>
+    /// When this component loads, create a filter
+    /// </summary>
     protected override void OnInitialized()
     {
+        base.OnInitialized();
         CurrentSortColumn = "IsAuthorized";
         SortDir = "descending";
+    }
+
+    protected override void InitializeFilters()
+    {
+        Filters["denialType"] =new Filter<bool?>("denialType", null);
     }
 
     /// <summary>
@@ -42,7 +60,32 @@
     {
         if (target == null) return query.Where(x => false); // Return empty if no associate selected
 
-        // Filter the view by the selected lockout
-        return query.Where(x => x.LockoutId == target.LockoutId);
+        // Filter the view by the selected lockout first to limit results
+        query = query.Where(x => x.LockoutId == target.LockoutId);
+
+        // Apply the denial type filter if applicable
+        if(FilterDenialType.IsActive && FilterDenialType.Value.HasValue){
+            query = query.Where(x => x.IsAuthorized == false); // when filtering by denial type, ignore authorized row(s)
+
+            if (FilterDenialType.Value == true){ // true represents insufficent auth level
+                query = query.Where(x => x.AuthLevel < target.LockoutLevel);
+            }
+            else{ // false represents not authorized for the line at all
+                query = query.Where(x => x.AuthLevel == null);
+            }
+        }
+
+        return query;
+    }
+
+    /// <summary>
+    /// Helper method to update filter and view on dropdown change 
+    /// </summary>
+    /// <param name="e">The change event thrown by the dropdown</param>
+    /// <returns></returns>
+    private async Task ChangeDenialType(ChangeEventArgs e){
+        string val = e.Value?.ToString();
+        FilterDenialType.Value = string.IsNullOrEmpty(val) ? null : bool.Parse(val); 
+        await LoadData();
     }
 }

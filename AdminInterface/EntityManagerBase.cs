@@ -78,6 +78,11 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     }
 
     /// <summary>
+    /// When an instance of EntityManagerBase is initialized, load the filter registry
+    /// </summary>
+    protected override void OnInitialized() => InitializeFilters();
+
+    /// <summary>
     /// Hook for children to initialize filters by adding them to the registry.
     /// The generic EntityBaseManager has no filters, so return immediately
     /// </summary>

@@ -26,7 +26,7 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
     /// <returns></returns>
     protected override void OnInitialized()
     {
-        InitializeFilters();
+        base.OnInitialized();
         CurrentSortColumn = "LockoutTime";
         SortDir = "descending";
     }

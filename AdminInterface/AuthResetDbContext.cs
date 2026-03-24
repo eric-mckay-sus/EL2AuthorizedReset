@@ -239,6 +239,10 @@ public class Reset
     [Column("requestTime")]
     public DateTime Timestamp { get; set; }
 
+    [Column("authLevel")]
+    public byte? AuthLevel { get; set; }
+
+    [NotDisplayed]
     [Column("associateNum")]
     public int? AssocNum { get; set; }
 
