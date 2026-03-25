@@ -1,6 +1,7 @@
+using Microsoft.AspNetCore.Components;
 
 namespace AdminInterface.Components.Pages.HomePage;
-public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
+public class SearchLockoutsBase : EntityManagerBase<Lockout, LockoutReset>
 {
     // Filter accessors for cleaner HTML
     protected Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
@@ -16,9 +17,22 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
     protected Filter<DateTime?> FilterResetAfter => GetFilter<DateTime?>("resetAfter");
     protected Filter<DateTime?> FilterResetBefore => GetFilter<DateTime?>("resetBefore");
 
-    protected LockoutReset? target;
-    protected bool isTargeting = false;
     protected bool lockoutLevelGreaterThan = true;
+    private bool _blazorStop = true;
+    [Parameter] public LockoutReset? target { get; set; }
+    [Parameter] public EventCallback<LockoutReset> HandleExpand { get; set; }
+
+    /// <summary>
+    /// Skip LoadData if there's no change that requires a DB hit
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (TotalCount == 0) 
+        {
+            await base.OnParametersSetAsync();
+        }
+    }
 
     /// <summary>
     /// When the app loads, fill the filter registry and default sort
@@ -29,6 +43,33 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
         base.OnInitialized();
         CurrentSortColumn = "LockoutTime";
         SortDir = "descending";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        
+        if (!_blazorStop)
+        {
+            _blazorStop = true;
+            // The UI has rendered the new page results. Now it's safe to close.
+            await OnItemChanged.InvokeAsync(target);
+        }
+    }
+
+    /// <summary>
+    /// Override for table refresh that verifies the targeted lockout is still in the dataview.
+    /// If it isn't, tell the parent to hide the associated resets
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task LoadData(bool keepPage=false)
+    {
+        await base.LoadData(keepPage);
+        
+        if (target != null && !DataView.Contains(target))
+        {
+            _blazorStop = false;
+        }
     }
 
     /// <summary>
@@ -106,19 +147,5 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
             query = query.Where(x => x.ResetTime != null && x.ResetTime <= FilterResetBefore.Value);
 
         return query;
-    }
-
-    public void HandleExpand(LockoutReset row) {
-        if (row.Equals(target)){
-            HandleClose();
-        } else {
-            target = row;
-            isTargeting = true;
-        }
-    }
-
-    public void HandleClose(){
-        target = null;
-        isTargeting = false;
     }
 }

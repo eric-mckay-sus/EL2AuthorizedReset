@@ -132,10 +132,10 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         // Gets all results (delayed execution)
         IQueryable<TRead> query = context.Set<TRead>().AsNoTracking();
 
-        // Apply filter(s) set by the child, count, then sort
+        // Apply filter(s) set by the child, sort, then count
         query = ApplyFilters(query);
-        TotalCount = await query.CountAsync();
         query = ApplySorting(query);
+        TotalCount = await query.CountAsync(); // have to count after sort bc it applies an assumed 'sort col not null' filter
 
         // Execute here (DataView requires a list for display)
         DataView = await query
@@ -272,7 +272,8 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         {
             return query;
         }
-        return query.OrderBy($"{CurrentSortColumn} {SortDir}");
+        // Null is the smallest value for any column, so it clutters ascending sorts
+        return query.Where($"{CurrentSortColumn} != null").OrderBy($"{CurrentSortColumn} {SortDir}");
     }
 
     /// <summary>

@@ -1,5 +1,4 @@
 @page "/manage"
-@using AdminInterface
 @attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>Manage</PageTitle>
@@ -7,35 +6,35 @@
 <div class="row overflow-hidden flex-nowrap">
     @* Split screen when expanded, otherwise fullscreen the associate table *@
     <div class="@(isTargeting ? "col-7" : "col-12") transition-width">
-        <ManageAssociates target="targeted" HandleExpand="HandleExpand" OnItemChanged="HandleAssociateNotShown"/>
+        <ManageAssociates target="target" HandleExpand="HandleExpand" OnItemChanged="HandleAssociateNotShown"/>
     </div>
     <div class="@(isTargeting ? "col-5" : "col-0") transition-width overflow-hidden" 
          style="@(isTargeting ? "" : "display:none;")">
             @if (isTargeting) {
-                <ManageLines targetAssociate="targeted" OnClose="HandleClose" />
+                <ManageLines targetAssociate="target" OnClose="HandleClose" />
             }
     </div>
 </div>
 
 @code{
-    Associate? targeted;
+    Associate? target;
     bool isTargeting = false;
     public void HandleExpand(Associate associate) {
-        if (associate.Equals(targeted)){
+        if (associate.Equals(target)){
             HandleClose();
         } else {
-            targeted = associate;
+            target = associate;
             isTargeting = true;
         }
     }
     public void HandleClose(){
-        targeted = null;
+        target = null;
         isTargeting = false;
     }
 
     private void HandleAssociateNotShown(Associate changedAssociate)
     {
-        if (targeted != null && changedAssociate.Equals(targeted))
+        if (target != null && changedAssociate.Equals(target))
         {
             HandleClose();
         }

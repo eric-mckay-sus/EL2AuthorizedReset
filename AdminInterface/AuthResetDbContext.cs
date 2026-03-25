@@ -291,4 +291,18 @@ public class Lockout
 
     [Column("reason")]
     public string Reason { get; set; }
+
+    public override int GetHashCode()
+    {
+        return Id.GetHashCode();
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is Lockout other)
+        {
+            return Id == other.Id;
+        }
+        return false;
+    }
 }

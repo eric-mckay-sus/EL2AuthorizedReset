@@ -100,6 +100,7 @@
 @code{
     private string searchText = "";
     private bool searchingInt => int.TryParse(searchText, out _);
+    private bool _blazorStop = true;
     [Parameter] public EventCallback<Associate> HandleExpand { get; set; }
     [Parameter] public Associate? target { get; set; }
 
@@ -109,10 +110,19 @@
     /// <returns></returns>
     protected override async Task OnParametersSetAsync()
     {
-        
         if (TotalCount == 0) 
         {
             await base.OnParametersSetAsync();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_blazorStop)
+        {
+            _blazorStop = true;
+            // The UI has rendered the new page results. Now it's safe to close.
+            await OnItemChanged.InvokeAsync(target);
         }
     }
 
@@ -137,13 +147,10 @@
     protected override async Task LoadData(bool keepPage=false)
     {
         await base.LoadData(keepPage);
-
-        if (target != null && !DataView.Contains(target) && !string.IsNullOrEmpty(searchText))
+        
+        if (target != null && !DataView.Contains(target))
         {
-            if (OnItemChanged.HasDelegate)
-            {
-                await OnItemChanged.InvokeAsync(target); 
-            }
+            _blazorStop = false;
         }
     }
 

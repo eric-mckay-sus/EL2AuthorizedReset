@@ -2,7 +2,7 @@
 
 @if (target != null){ @* For prerendering cases*@
     <div class="d-flex justify-content-between mb-3">
-        <h5>CMMS #@target.CmmsNum reset requests for lockout at @target.LockoutTime</h5>
+        <h2>CMMS #<strong>@target.CmmsNum</strong> reset requests for lockout at @target.LockoutTime</h2>
         @if (OnClose.HasDelegate){
             <button type="button" class="btn-close" title="Close reset history split screen" @onclick="OnClose"></button>
         }
