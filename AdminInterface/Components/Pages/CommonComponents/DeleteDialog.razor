@@ -3,7 +3,7 @@
 @code {
     private ConfirmDialog dialog = default!;
 
-    public async Task<bool> ConfirmAsync<T>(T item)
+    internal async Task<bool> ConfirmAsync<T>(T item)
     {
         var options = new ConfirmDialogOptions
         {

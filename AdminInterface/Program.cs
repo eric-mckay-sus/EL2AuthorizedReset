@@ -43,9 +43,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 /* --- STATUS CODE HANDLING --- */
-// This tells the server: "If you see a 401 or 403, don't tell the browser yet. 
+// This tells the server: "If you see a 401 or 403, don't tell the browser yet.
 // Re-run the pipeline at the root path so Blazor can load and handle it."
-app.UseStatusCodePagesWithReExecute("/"); 
+app.UseStatusCodePagesWithReExecute("/");
 
 app.UseAntiforgery();
 

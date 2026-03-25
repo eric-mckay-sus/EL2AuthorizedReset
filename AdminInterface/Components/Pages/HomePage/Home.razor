@@ -22,8 +22,8 @@
             <div class="col-2">
                 <label class="form-label">Lockout Level</label>
                 <div class="input-group">
-                    <button class="btn btn-secondary" 
-                            type="button" 
+                    <button class="btn btn-secondary"
+                            type="button"
                             @onclick="() => _searchLockoutsRef.lockoutLevelGreaterThan = !_searchLockoutsRef.lockoutLevelGreaterThan"
                             title="@(_searchLockoutsRef.lockoutLevelGreaterThan ? "Search higher lockout level" : "Search lower lockout level")">
                         @if (_searchLockoutsRef.lockoutLevelGreaterThan) {
@@ -75,13 +75,13 @@
 
 <div class="row overflow-hidden flex-nowrap">
     @* Split screen when expanded, otherwise fullscreen the lockout table *@
-    <div class="@(isTargeting ? "col-7" : "col-12") transition-width">
-        <SearchLockouts @ref="_searchLockoutsRef" target="target" HandleExpand="HandleExpand" OnItemChanged="HandleLockoutResetNotShown"/>
+    <div class="@(_isTargeting ? "col-7" : "col-12") transition-width">
+        <SearchLockouts @ref="_searchLockoutsRef" target="_target" HandleExpand="HandleExpand" OnItemChanged="HandleLockoutResetNotShown"/>
     </div>
-    <div class="@(isTargeting ? "col-5" : "col-0") transition-width overflow-hidden" 
-         style="@(isTargeting ? "" : "display:none;")">
-            @if (isTargeting) {
-                <TargetedResets target="target" OnClose="HandleClose" />
+    <div class="@(_isTargeting ? "col-5" : "col-0") transition-width overflow-hidden"
+         style="@(_isTargeting ? "" : "display:none;")">
+            @if (_isTargeting) {
+                <TargetedResets target="_target" OnClose="HandleClose" />
             }
     </div>
 </div>
@@ -99,24 +99,24 @@
             }
         }
     }
-    LockoutReset? target;
-    bool isTargeting = false;
-    public void HandleExpand(LockoutReset lockoutReset) {
-        if (lockoutReset.Equals(target)){
+    private LockoutReset? _target;
+    private bool _isTargeting = false;
+    private void HandleExpand(LockoutReset lockoutReset) {
+        if (lockoutReset.Equals(_target)){
             HandleClose();
         } else {
-            target = lockoutReset;
-            isTargeting = true;
+            _target = lockoutReset;
+            _isTargeting = true;
         }
     }
-    public void HandleClose(){
-        target = null;
-        isTargeting = false;
+    private void HandleClose(){
+        _target = null;
+        _isTargeting = false;
     }
 
     private void HandleLockoutResetNotShown(LockoutReset changedLockoutReset)
     {
-        if (target != null && changedLockoutReset.Equals(target))
+        if (_target != null && changedLockoutReset.Equals(_target))
         {
             HandleClose();
         }

@@ -8,8 +8,8 @@
         }
     </div>
     <label class="form-label">Denial Type</label>
-    <select class="form-select mb-3" 
-            value="@FilterDenialType.Value?.ToString().ToLower()" 
+    <select class="form-select mb-3"
+            value="@FilterDenialType.Value?.ToString().ToLower()"
             title="Filter by reset requests from associates with insufficent auth level or without privileges on that line altogether"
             @onchange="ChangeDenialType">
         <option value="">All Records</option>
@@ -24,12 +24,12 @@
             <h5>No records matched your criteria.</h5>
         } else{
             var authorizedEntry = DataView.FirstOrDefault(x => x.IsAuthorized == true); // Works bc we're sorting by authorization descending
-            <TablePresenter 
+            <TablePresenter
                 TRead="Reset"
                 TWrite="Reset"
                 Base="this"
-                target="authorizedEntry"
-                highlightStyle="table-success" />
+                Target="authorizedEntry"
+                HighlightStyle="table-success" />
         }
     }
 }
@@ -79,13 +79,13 @@
     }
 
     /// <summary>
-    /// Helper method to update filter and view on dropdown change 
+    /// Helper method to update filter and view on dropdown change
     /// </summary>
     /// <param name="e">The change event thrown by the dropdown</param>
     /// <returns></returns>
     private async Task ChangeDenialType(ChangeEventArgs e){
         string val = e.Value?.ToString();
-        FilterDenialType.Value = string.IsNullOrWhiteSpace(val) ? null : bool.Parse(val); 
+        FilterDenialType.Value = string.IsNullOrWhiteSpace(val) ? null : bool.Parse(val);
         await LoadData();
     }
 }

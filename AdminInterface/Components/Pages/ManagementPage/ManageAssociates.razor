@@ -50,18 +50,18 @@
         <div class="col-6">
             <EditForm Model="this" OnValidSubmit="() => LoadData()">
                 <div class="input-group mb-2">
-                    <InputText 
-                        id="searchBar" 
-                        @bind-Value="searchText"
+                    <InputText
+                        id="searchBar"
+                        @bind-Value="_searchText"
                         @onblur="HandleBlur"
-                        class="form-control" 
+                        class="form-control"
                         placeholder="Search by associate name or number"
                         autocomplete="off" />
-                        @if (!string.IsNullOrEmpty(searchText))
+                        @if (!string.IsNullOrEmpty(_searchText))
                         {
                             <span class="input-group-text clear-addon">
-                                <button type="button" class="btn-close" aria-label="Clear" 
-                                    @onclick="ClearSearchBar" 
+                                <button type="button" class="btn-close" aria-label="Clear"
+                                    @onclick="ClearSearchBar"
                                     style="font-size: 0.8rem;"></button>
                             </span>
                         }
@@ -71,7 +71,7 @@
             </EditForm>
         </div>
     </div>
-    
+
     <div class="d-flex justify-content-center mb-3">
         <button class="btn btn-success" @onclick="ShowForm">
             <i class="bi bi-plus-lg"></i> Add New Associate
@@ -83,23 +83,23 @@
     <Spinner Color="SpinnerColor.Primary" />
 } else {
     @if (DataView.Count > 0) {
-        <TablePresenter 
+        <TablePresenter
             TWrite="Associate"
             TRead="Associate"
             Base="this"
-            target="target"
-            OnDelete="HandleDelete" 
+            Target="target"
+            OnDelete="HandleDelete"
             OnExpand="HandleExpand" />
     } else {
-        <h3>No associates @(searchingInt ? $"with associate number \"{searchText}\"" : $"with name containing \"{searchText}\"")</h3>
+        <h3>No associates @(_searchingInt ? $"with associate number \"{_searchText}\"" : $"with name containing \"{_searchText}\"")</h3>
     }
 }
 
 <DeleteDialog @ref="deleteDialog" />
 
 @code{
-    private string searchText = "";
-    private bool searchingInt => int.TryParse(searchText, out _);
+    private string _searchText = "";
+    private bool _searchingInt => int.TryParse(_searchText, out _);
     private bool _blazorStop = true;
     [Parameter] public EventCallback<Associate> HandleExpand { get; set; }
     [Parameter] public Associate? target { get; set; }
@@ -110,7 +110,7 @@
     /// <returns></returns>
     protected override async Task OnParametersSetAsync()
     {
-        if (TotalCount == 0) 
+        if (TotalCount == 0)
         {
             await base.OnParametersSetAsync();
         }
@@ -127,12 +127,12 @@
     }
 
     /// <summary>
-    /// If the user leaves the search bar and it is empty, 
+    /// If the user leaves the search bar and it is empty,
     /// reload the data to show the full list.
     /// </summary>
     private async Task HandleBlur()
     {
-        if (string.IsNullOrWhiteSpace(searchText))
+        if (string.IsNullOrWhiteSpace(_searchText))
         {
             // In this state, the user intent is the same as ClearSearchBar.
             await LoadData();
@@ -144,10 +144,10 @@
     /// If it isn't, tell the parent to hide the associated lines
     /// </summary>
     /// <returns></returns>
-    protected internal override async Task LoadData(bool keepPage=false)
+    public override async Task LoadData(bool keepPage=false)
     {
         await base.LoadData(keepPage);
-        
+
         if (target != null && !DataView.Contains(target))
         {
             _blazorStop = false;
@@ -162,10 +162,10 @@
     /// <returns>The query where results match the search criterion</returns>
     protected override IQueryable<Associate> ApplyFilters(IQueryable<Associate> query)
     {
-        if(int.TryParse(searchText, out int assocNum)){
+        if(int.TryParse(_searchText, out int assocNum)){
             query = query.Where(a => a.AssocNum == assocNum);
         } else {
-            query = query.Where(a => a.Name.Contains(searchText));
+            query = query.Where(a => a.Name.Contains(_searchText));
         }
         return query;
     }
@@ -174,8 +174,8 @@
     /// Clear the search bar, then reload the table for the empty query
     /// </summary>
     /// <returns></returns>
-    protected async Task ClearSearchBar(){
-        searchText = "";
+    private async Task ClearSearchBar(){
+        _searchText = "";
         await LoadData();
     }
 }

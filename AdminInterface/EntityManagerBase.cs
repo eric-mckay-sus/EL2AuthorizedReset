@@ -14,13 +14,13 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     where TWrite : class, new()
     where TRead : class, new()
 {
-    [Inject] protected IDbContextFactory<AuthResetDbContext> DbFactory { get; set; } = default!; // The thread-safe DB context generator
+    [Inject] private protected IDbContextFactory<AuthResetDbContext> DbFactory { get; set; } = default!; // The thread-safe DB context generator
     [Parameter] public EventCallback<TRead> OnItemChanged { get; set; } // An event to detect when an item might not appear in the DataView
 
     // Filter registry to hold all active filters
-    protected Dictionary<string, IFilter> Filters { get; set; } = [];
-    protected int LastQueryHash;
-    public bool IsStale => LastQueryHash != GetFilterStateHash(Filters);
+    private protected Dictionary<string, IFilter> Filters { get; set; } = [];
+    private int _lastQueryHash;
+    public bool IsStale => _lastQueryHash != GetFilterStateHash(Filters);
 
     // Pagination variables
     public int CurrentPage { get; set; } = 1; // Tracks the current page number (always between 1 and TotalPages, inclusive)
@@ -28,12 +28,12 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     public int TotalCount { get; set; } // The total number of results
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize); // Dynamically compute page count whenever totalCount or pageSize update
 
-    protected TWrite NewItem = new(); // The item to be added (from the add form)
+    private protected TWrite NewItem = new(); // The item to be added (from the add form)
     public List<TRead> DataView = []; // The view to READ from (type may be different from the one being written)
-    protected string? ErrorMessage; // The error message for uniqueness constraint, if applicable
-    protected DeleteDialog deleteDialog = default!; // The dialog to show upon pressing the delete button for a row
-    protected bool IsFormVisible = false; // Whether to show or hide the add form
-    protected bool IsLoading = true; // Whether the DataView is loading
+    public string? ErrorMessage; // The error message for uniqueness constraint, if applicable
+    private protected DeleteDialog deleteDialog = default!; // The dialog to show upon pressing the delete button for a row
+    private protected bool IsFormVisible = false; // Whether to show or hide the add form
+    public bool IsLoading = true; // Whether the DataView is loading
 
     // For sorting
     public string CurrentSortColumn { get; set; } = ""; // The name of the column that results are currently being sorted by
@@ -45,18 +45,18 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// </summary>
     /// <param name="filterDict">A dictionary of keys mapped to filters</param>
     /// <returns>A value representing the state of the filters for the input dictionary</returns>
-    public virtual int GetFilterStateHash(Dictionary<string, IFilter> filterDict) {
+    private protected virtual int GetFilterStateHash(Dictionary<string, IFilter> filterDict) {
         unchecked // Tells the compiler to simply truncate the calculation instead of throwing an exception for integer overflow
         {
             int hash = 17;
             // Order by key to ensure dictionary order doesn't change the hash
-            foreach (var key in filterDict.Keys.OrderBy(k => k))
+            foreach (string key in filterDict.Keys.OrderBy(k => k))
             {
                 // Ignore 'in' key, it does not affect the search contents within a table
                 if (key.Equals("in", StringComparison.OrdinalIgnoreCase)) continue;
 
                 // Factor in each aspect of the filter
-                var filter = filterDict[key];
+                IFilter filter = filterDict[key];
 
                 // Key and activity status are part of hash regardless of activity status
                 hash *= 31 + key.ToLower().GetHashCode();
@@ -72,7 +72,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
             // Sorts affect view, so a hash of the view should include them
             hash *= 31 + CurrentSortColumn.GetHashCode();
             hash *= 31 + SortDir.GetHashCode();
-            
+
             return hash;
         }
     }
@@ -99,7 +99,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// <returns>The filter with appropriate type</returns>
     protected Filter<T> GetFilter<T>(string key)
     {
-        if (Filters.TryGetValue(key, out var filter) && filter is Filter<T> typedFilter)
+        if (Filters.TryGetValue(key, out IFilter? filter) && filter is Filter<T> typedFilter)
         {
             return typedFilter;
         }
@@ -120,14 +120,14 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// Load the table, applying any filters the child assigns
     /// </summary>
     /// <returns></returns>
-    protected internal virtual async Task LoadData(bool keepPage=false)
+    public virtual async Task LoadData(bool keepPage=false)
     {
         if (!keepPage) CurrentPage = 1;
         // Update and show loading state
         IsLoading = true;
         StateHasChanged();
 
-        using var context = await DbFactory.CreateDbContextAsync();
+        using AuthResetDbContext context = await DbFactory.CreateDbContextAsync();
 
         // Gets all results (delayed execution)
         IQueryable<TRead> query = context.Set<TRead>().AsNoTracking();
@@ -143,7 +143,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
                 .Take(PageSize)
                 .ToListAsync();
 
-        LastQueryHash = GetFilterStateHash(Filters);
+        _lastQueryHash = GetFilterStateHash(Filters);
         IsLoading = false;
         StateHasChanged();
     }
@@ -159,11 +159,11 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// Throw flag to display add form, view handles the actual displaying
     /// </summary>
     protected void ShowForm() => IsFormVisible = true;
-    
+
     /// <summary>
     /// Remove add form flag, clear input and error message
     /// </summary>
-    protected virtual void CancelForm() 
+    protected virtual void CancelForm()
     {
         IsFormVisible = false;
         NewItem = new TWrite();
@@ -179,7 +179,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         ErrorMessage = null;
         try
         {
-            using var context = DbFactory.CreateDbContext();
+            using AuthResetDbContext context = DbFactory.CreateDbContext();
             context.Set<TWrite>().Add(NewItem);
             await context.SaveChangesAsync();
 
@@ -229,7 +229,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     {
         if (await deleteDialog.ConfirmAsync(item))
         {
-            using var context = DbFactory.CreateDbContext();
+            using AuthResetDbContext context = DbFactory.CreateDbContext();
             await ExecuteDelete(context, item);
 
             if (OnItemChanged.HasDelegate)
@@ -266,7 +266,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// </summary>
     /// <param name="query">The query to which the sorts should be appended</param>
     /// <returns>An IQueryable object with sorts applied</returns>
-    public IQueryable<TRead> ApplySorting(IQueryable<TRead> query)
+    private IQueryable<TRead> ApplySorting(IQueryable<TRead> query)
     {
         if (SortDir == "none" || string.IsNullOrWhiteSpace(CurrentSortColumn))
         {
@@ -312,7 +312,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         {
             PageSize = newSize;
             // Reset to page 1 because the number of pages has changed
-            CurrentPage = 1; 
+            CurrentPage = 1;
             await LoadData();
         }
     }
@@ -322,7 +322,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// </summary>
     protected internal async Task ClearAllFilters()
     {
-        foreach (var filter in Filters.Values)
+        foreach (IFilter filter in Filters.Values)
         {
             filter.Reset();
         }

@@ -9,7 +9,7 @@ Purpose
 How it works
 ---------
 
-1. 
+1.
 
 Run locally
 ---------

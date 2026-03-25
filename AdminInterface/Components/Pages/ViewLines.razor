@@ -13,7 +13,7 @@
         </div>
         <div class="col-4">
             <label class="form-label">Status</label>
-            <select class="form-select" 
+            <select class="form-select"
                     value="@FilterStatus.Value?.ToString().ToLower()"
                     @onchange="@(e => FilterStatus.Value = ParseBool(e.Value?.ToString()))">
                 <option value="">All Records</option>
@@ -38,14 +38,14 @@
 } else {
     <TablePresenter
         TRead="CmmsLine"
-        TWrite="CmmsLine" 
+        TWrite="CmmsLine"
         Base="this" />
 }
 
 @code {
-    protected Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
-    protected Filter<string?> FilterLineName => GetFilter<string?>("lineName");
-    protected Filter<bool?> FilterStatus => GetFilter<bool?>("status");
+    private Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
+    private Filter<string?> FilterLineName => GetFilter<string?>("lineName");
+    private Filter<bool?> FilterStatus => GetFilter<bool?>("status");
 
     /// <summary>
     /// When the page loads, set the default sort and populate the filters

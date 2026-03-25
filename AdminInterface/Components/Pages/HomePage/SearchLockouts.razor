@@ -9,12 +9,12 @@
     <div class="row overflow-hidden flex-nowrap">
         @if (DataView.Count > 0){
             <div>
-                <TablePresenter 
+                <TablePresenter
                     TWrite="Lockout"
-                    TRead="LockoutReset" 
+                    TRead="LockoutReset"
                     Base="this"
                     OnExpand="HandleExpand"
-                    target="target" />
+                    Target="target" />
             </div>
         }
     </div>
@@ -28,7 +28,7 @@
     internal Filter<string?> FilterStatus => GetFilter<string?>("status");
     internal Filter<string?> FilterLineName => GetFilter<string?>("lineName");
     internal Filter<string?> FilterResetter => GetFilter<string?>("resetter");
-    
+
     // Time range filters
     internal Filter<DateTime?> FilterLockAfter => GetFilter<DateTime?>("lockAfter");
     internal Filter<DateTime?> FilterLockBefore => GetFilter<DateTime?>("lockBefore");
@@ -46,7 +46,7 @@
     /// <returns></returns>
     protected override async Task OnParametersSetAsync()
     {
-        if (TotalCount == 0) 
+        if (TotalCount == 0)
         {
             await base.OnParametersSetAsync();
         }
@@ -66,7 +66,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        
+
         if (!_blazorStop)
         {
             _blazorStop = true;
@@ -80,10 +80,10 @@
     /// If it isn't, tell the parent to hide the associated resets
     /// </summary>
     /// <returns></returns>
-    protected internal override async Task LoadData(bool keepPage=false)
+    public override async Task LoadData(bool keepPage=false)
     {
         await base.LoadData(keepPage);
-        
+
         if (target != null && !DataView.Contains(target))
         {
             _blazorStop = false;
@@ -100,14 +100,14 @@
         Filters["status"] = new Filter<string?>("status", null);
         Filters["lineName"] = new Filter<string?>("lineName", null);
         Filters["resetter"] = new Filter<string?>("resetter", null);
-        
+
         Filters["lockAfter"] = new Filter<DateTime?>("lockAfter", null);
         Filters["lockBefore"] = new Filter<DateTime?>("lockBefore", null);
         Filters["resetAfter"] = new Filter<DateTime?>("resetAfter", null);
         Filters["resetBefore"] = new Filter<DateTime?>("resetBefore", null);
     }
 
-    public override int GetFilterStateHash(Dictionary<string, IFilter> filterDict)
+    private protected override int GetFilterStateHash(Dictionary<string, IFilter> filterDict)
     {
         int hash = base.GetFilterStateHash(filterDict);
 

@@ -14,9 +14,9 @@ public class Filter<T> : IFilter
 
     private T? _value; // The internal value held by the filter
     public T? Value // The methods of accessing and modifying the filter's value
-    { 
+    {
         get => _value;
-        set 
+        set
         {
             _value = value;
             IsActive = !IsDefault(value);
