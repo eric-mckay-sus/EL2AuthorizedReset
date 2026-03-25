@@ -144,7 +144,7 @@
     /// If it isn't, tell the parent to hide the associated lines
     /// </summary>
     /// <returns></returns>
-    protected override async Task LoadData(bool keepPage=false)
+    protected internal override async Task LoadData(bool keepPage=false)
     {
         await base.LoadData(keepPage);
         

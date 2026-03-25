@@ -120,7 +120,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// Load the table, applying any filters the child assigns
     /// </summary>
     /// <returns></returns>
-    protected virtual async Task LoadData(bool keepPage=false)
+    protected internal virtual async Task LoadData(bool keepPage=false)
     {
         if (!keepPage) CurrentPage = 1;
         // Update and show loading state
@@ -320,7 +320,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// <summary>
     /// Clears all filters and reloads the data
     /// </summary>
-    protected async Task ClearAllFilters()
+    protected internal async Task ClearAllFilters()
     {
         foreach (var filter in Filters.Values)
         {

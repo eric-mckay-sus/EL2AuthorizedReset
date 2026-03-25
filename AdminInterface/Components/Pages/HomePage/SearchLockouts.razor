@@ -1,73 +1,4 @@
-@inherits SearchLockoutsBase
-
-<h2>Lockouts & Resets</h2>
-
-<div class="filter-panel mb-3 p-3 border rounded bg-light">
-    <div class="row g-3">
-        <div class="col-2">
-            <label class="form-label">CMMS #</label>
-            <input type="number" class="form-control" @bind-value="FilterCmmsNum.Value" @bind-value:event="oninput" placeholder="Search machine ID" />
-        </div>
-        <div class="col-2">
-            <label class="form-label">Status</label>
-            <select class="form-select" @bind="FilterStatus.Value">
-                <option value="">All Records</option>
-                <option value="Locked out">Locked out</option>
-                <option value="Released">Released</option>
-            </select>
-        </div>
-        <div class="col-2">
-            <label class="form-label">Lockout Level</label>
-            <div class="input-group">
-                <button class="btn btn-secondary" 
-                        type="button" 
-                        @onclick="() => lockoutLevelGreaterThan = !lockoutLevelGreaterThan"
-                        title="@(lockoutLevelGreaterThan ? "Search higher lockout level" : "Search lower lockout level")">
-                    @if (lockoutLevelGreaterThan) {
-                        <span class="fw-bold">&ge;</span>
-                    } else {
-                        <span class="fw-bold">&le;</span>
-                    }
-                </button>
-                <input type="number" class="form-control" @bind-value="FilterLockoutLevel.Value" @bind-value:event="oninput" placeholder="Filter lockout level" />
-            </div>
-        </div>
-        <div class="col-2">
-            <label class="form-label">Reason</label>
-            <input type="text" class="form-control" @bind-value="FilterReason.Value" @bind-value:event="oninput" placeholder="Fault description" />
-        </div>
-        <div class="col-2">
-            <label class="form-label">Resetter Name</label>
-            <input type="text" class="form-control" @bind-value="FilterResetter.Value" @bind-value:event="oninput" placeholder="Enter associate name" />
-        </div>
-        <div class="col-2">
-            <label class="form-label">Line Name</label>
-            <input type="text" class="form-control" @bind-value="FilterLineName.Value" @bind-value:event="oninput" placeholder="e.g. F24" />
-        </div>
-
-        <div class="col-3">
-            <label class="form-label">Lockout After</label>
-            <input type="datetime-local" class="form-control" @bind="FilterLockAfter.Value" />
-        </div>
-        <div class="col-3">
-            <label class="form-label">Lockout Before</label>
-            <input type="datetime-local" class="form-control" @bind="FilterLockBefore.Value" />
-        </div>
-        <div class="col-3">
-            <label class="form-label">Reset After</label>
-            <input type="datetime-local" class="form-control" @bind="FilterResetAfter.Value" />
-        </div>
-        <div class="col-3">
-            <label class="form-label">Reset Before</label>
-            <input type="datetime-local" class="form-control" @bind="FilterResetBefore.Value" />
-        </div>
-
-        <div class="col-12 d-flex justify-content-end gap-3">
-            <button class="btn btn-outline-secondary" @onclick="ClearAllFilters">Clear</button>
-            <button class="btn btn-primary" @onclick="() => LoadData()">Execute</button>
-        </div>
-    </div>
-</div>
+@inherits EntityManagerBase<Lockout, LockoutReset>
 
 @if (IsLoading) {
     <div class="text-center p-5">
@@ -87,4 +18,152 @@
             </div>
         }
     </div>
+}
+
+@code{
+    // Filter accessors for cleaner HTML
+    internal Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
+    internal Filter<string?> FilterReason => GetFilter<string?>("reason");
+    internal Filter<int?> FilterLockoutLevel => GetFilter<int?>("lockoutLevel");
+    internal Filter<string?> FilterStatus => GetFilter<string?>("status");
+    internal Filter<string?> FilterLineName => GetFilter<string?>("lineName");
+    internal Filter<string?> FilterResetter => GetFilter<string?>("resetter");
+    
+    // Time range filters
+    internal Filter<DateTime?> FilterLockAfter => GetFilter<DateTime?>("lockAfter");
+    internal Filter<DateTime?> FilterLockBefore => GetFilter<DateTime?>("lockBefore");
+    internal Filter<DateTime?> FilterResetAfter => GetFilter<DateTime?>("resetAfter");
+    internal Filter<DateTime?> FilterResetBefore => GetFilter<DateTime?>("resetBefore");
+
+    internal bool lockoutLevelGreaterThan = true;
+    private bool _blazorStop = true;
+    [Parameter] public LockoutReset? target { get; set; }
+    [Parameter] public EventCallback<LockoutReset> HandleExpand { get; set; }
+
+    /// <summary>
+    /// Skip LoadData if there's no change that requires a DB hit
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (TotalCount == 0) 
+        {
+            await base.OnParametersSetAsync();
+        }
+    }
+
+    /// <summary>
+    /// When the app loads, fill the filter registry and default sort
+    /// </summary>
+    /// <returns></returns>
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        CurrentSortColumn = "LockoutTime";
+        SortDir = "descending";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        
+        if (!_blazorStop)
+        {
+            _blazorStop = true;
+            // The UI has rendered the new page results. Now it's safe to close.
+            await OnItemChanged.InvokeAsync(target);
+        }
+    }
+
+    /// <summary>
+    /// Override for table refresh that verifies the targeted lockout is still in the dataview.
+    /// If it isn't, tell the parent to hide the associated resets
+    /// </summary>
+    /// <returns></returns>
+    protected internal override async Task LoadData(bool keepPage=false)
+    {
+        await base.LoadData(keepPage);
+        
+        if (target != null && !DataView.Contains(target))
+        {
+            _blazorStop = false;
+        }
+    }
+
+    /// <summary>
+    /// Load the filter registry for searching the lockout/reset table
+    /// </summary>
+    protected override void InitializeFilters() {
+        Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
+        Filters["reason"] = new Filter<string?>("reason", null);
+        Filters["lockoutLevel"] = new Filter<int?>("lockoutLevel", null);
+        Filters["status"] = new Filter<string?>("status", null);
+        Filters["lineName"] = new Filter<string?>("lineName", null);
+        Filters["resetter"] = new Filter<string?>("resetter", null);
+        
+        Filters["lockAfter"] = new Filter<DateTime?>("lockAfter", null);
+        Filters["lockBefore"] = new Filter<DateTime?>("lockBefore", null);
+        Filters["resetAfter"] = new Filter<DateTime?>("resetAfter", null);
+        Filters["resetBefore"] = new Filter<DateTime?>("resetBefore", null);
+    }
+
+    public override int GetFilterStateHash(Dictionary<string, IFilter> filterDict)
+    {
+        int hash = base.GetFilterStateHash(filterDict);
+
+        if (FilterLockoutLevel.IsActive)
+            hash *= 31 + lockoutLevelGreaterThan.GetHashCode();
+        return hash;
+    }
+
+    /// <summary>
+    /// Apply all filters with input in the filter panel
+    /// </summary>
+    /// <param name="query">The query to which the filters should be applied</param>
+    /// <returns>The filtered query</returns>
+    protected override IQueryable<LockoutReset> ApplyFilters(IQueryable<LockoutReset> query)
+    {
+        // CMMS Number (Exact)
+        if (FilterCmmsNum.IsActive)
+            query = query.Where(x => x.CmmsNum == FilterCmmsNum.Value);
+
+        // Status (Exact match from dropdown)
+        if (FilterStatus.IsActive && !string.IsNullOrEmpty(FilterStatus.Value))
+            query = query.Where(x => x.Status == FilterStatus.Value);
+
+        // Reason (Partial match)
+        if (FilterReason.IsActive)
+            query = query.Where(x => x.Reason.Contains(FilterReason.Value!));
+
+        // Lockout Level (< or >)
+        if (FilterLockoutLevel.IsActive)
+        {
+            if(lockoutLevelGreaterThan)
+                query = query.Where(x => x.LockoutLevel >= FilterLockoutLevel.Value);
+            else
+                query = query.Where(x => x.LockoutLevel <= FilterLockoutLevel.Value);
+        }
+
+        // Line Name (Partial match)
+        if (FilterLineName.IsActive)
+            query = query.Where(x => x.LineName != null && x.LineName.Contains(FilterLineName.Value!));
+
+        // Resetter Name (Partial match)
+        if (FilterResetter.IsActive)
+            query = query.Where(x => x.ResetBy != null && x.ResetBy.Contains(FilterResetter.Value!));
+
+        // Lockout Time Range
+        if (FilterLockAfter.IsActive)
+            query = query.Where(x => x.LockoutTime >= FilterLockAfter.Value);
+        if (FilterLockBefore.IsActive)
+            query = query.Where(x => x.LockoutTime <= FilterLockBefore.Value);
+
+        // Reset Time Range
+        if (FilterResetAfter.IsActive)
+            query = query.Where(x => x.ResetTime != null && x.ResetTime >= FilterResetAfter.Value);
+        if (FilterResetBefore.IsActive)
+            query = query.Where(x => x.ResetTime != null && x.ResetTime <= FilterResetBefore.Value);
+
+        return query;
+    }
 }
