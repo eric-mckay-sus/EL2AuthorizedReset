@@ -6,8 +6,7 @@ a, .btn-link {
     color: #006bb7;
 }
 
-/* Used by the delete button */
-.btn-link:hover {
+.btn-action:hover {
     transform: scale(1.1);
     transition: transform 0.3s ease-in-out;
     color: hsl(354, 80%, 60%); /* Ensures it stays red on hover */
@@ -410,4 +409,16 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type=number] {
   -moz-appearance: textfield;
+}
+
+.filter-content {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0, 0.5, 0, 1), opacity 0.5s linear;
+}
+
+.filter-content.expanded {
+    max-height: 250px;
+    opacity: 1;
 }

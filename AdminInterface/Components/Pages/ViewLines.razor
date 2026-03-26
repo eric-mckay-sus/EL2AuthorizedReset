@@ -5,30 +5,40 @@
 
 <h2>View All Lines</h2>
 
-<div class="filter-panel mb-3 p-3 border rounded bg-light">
-    <div class="row g-3">
-        <div class="col-4">
-            <label class="form-label">CMMS #</label>
-            <input type="number" class="form-control" @bind-value="FilterCmmsNum.Value" @bind-value:event="oninput" placeholder="Search machine ID..." />
-        </div>
-        <div class="col-4">
-            <label class="form-label">Status</label>
-            <select class="form-select"
-                    value="@FilterStatus.Value?.ToString().ToLower()"
-                    @onchange="@(e => FilterStatus.Value = ParseBool(e.Value?.ToString()))">
-                <option value="">All Records</option>
-                <option value="false">Locked out</option>
-                <option value="true">Released</option>
-            </select>
-        </div>
-        <div class="col-4">
-            <label class="form-label">Line Name</label>
-            <input type="text" class="form-control" @bind-value="FilterLineName.Value" @bind-value:event="oninput" placeholder="e.g. F24" />
-        </div>
+<div class="filter-panel mb-3 p-2 border rounded bg-light">
+    <FilterHeader activeFilterCount="CountActiveFilters()" pendingFilterCount="CountPendingFilters()" @bind-IsCollapsed="_isCollapsed" />
 
-        <div class="col-12 d-flex justify-content-end gap-3">
-            <button class="btn btn-outline-secondary" @onclick="ClearAllFilters">Clear</button>
-            <button class="btn btn-primary" @onclick="() => LoadData()">Execute</button>
+    <div class="filter-content @(_isCollapsed ? "" : "expanded")">
+        <hr class="mt-0" />
+        <div class="row g-3">
+            <div class="col-4">
+                <label class="form-label">CMMS #</label>
+                <input type="number" class="form-control" @bind-value="FilterCmmsNum.Value" @bind-value:event="oninput" placeholder="Search machine ID..." />
+            </div>
+            <div class="col-4">
+                <label class="form-label">Status</label>
+                <select class="form-select"
+                        value="@FilterStatus.Value?.ToString().ToLower()"
+                        @onchange="@(e => FilterStatus.Value = ParseBool(e.Value?.ToString()))">
+                    <option value="">All Records</option>
+                    <option value="false">Locked out</option>
+                    <option value="true">Released</option>
+                </select>
+            </div>
+            <div class="col-4">
+                <label class="form-label">Line Name</label>
+                <input type="text" class="form-control" @bind-value="FilterLineName.Value" @bind-value:event="oninput" placeholder="e.g. F24" />
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-3">
+                <button class="btn btn-outline-secondary" @onclick="ClearAllFilters">Clear</button>
+                <button
+                        class="btn @(CountPendingFilters()>0 ? "btn-primary" : "btn-secondary")"
+                        style="cursor: pointer;"
+                        @onclick="ExecuteAndCollapse">
+                        Execute
+                    </button>
+            </div>
         </div>
     </div>
 </div>
@@ -47,6 +57,9 @@
     private Filter<string?> FilterLineName => GetFilter<string?>("lineName");
     private Filter<bool?> FilterStatus => GetFilter<bool?>("status");
 
+    private bool _isCollapsed = false;
+    private void ToggleCollapse() => _isCollapsed = !_isCollapsed;
+
     /// <summary>
     /// When the page loads, set the default sort and populate the filters
     /// </summary>
@@ -55,6 +68,11 @@
         CurrentSortColumn="IsActive";
         SortDir = "ascending";
         base.OnInitialized();
+    }
+
+    private async Task ExecuteAndCollapse(){
+        await LoadData(updateCounts:true);
+        ToggleCollapse();
     }
 
     /// <summary>

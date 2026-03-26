@@ -18,8 +18,9 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     [Parameter] public EventCallback<TRead> OnItemChanged { get; set; } // An event to detect when an item might not appear in the DataView
 
     // Filter registry to hold all active filters
-    private protected Dictionary<string, IFilter> Filters { get; set; } = [];
+    public Dictionary<string, IFilter> Filters { get; set; } = [];
     private int _lastQueryHash;
+    private Dictionary<string, IFilter> _filterSnapshot { get; set; } = [];
     public bool IsStale => _lastQueryHash != GetFilterStateHash(Filters);
 
     // Pagination variables
@@ -111,6 +112,32 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     }
 
     /// <summary>
+    /// Counts filters used in the last call to LoadData
+    /// </summary>
+    /// <returns></returns>
+    public int CountActiveFilters() => _filterSnapshot.Values.Count(x => x.IsActive);
+
+    /// <summary>
+    /// Counts filters where the UI value differs from the value in the snapshot
+    /// </summary>
+    /// <returns></returns>
+    public int CountPendingFilters()
+    {
+        return Filters.Count(kvp =>
+        {
+            // If it doesn't exist in the snapshot, it's pending if it's currently active
+            if (!_filterSnapshot.TryGetValue(kvp.Key, out IFilter? snapshot))
+                return kvp.Value.IsActive;
+
+            object? currentValue = kvp.Value.GetValue();
+            object? snapshotValue = snapshot.GetValue();
+
+            // Check for value equality. Using !Equals handles null transitions correctly.
+            return !Equals(currentValue, snapshotValue);
+        });
+    }
+
+    /// <summary>
     /// When the page loads, prepare the table
     /// </summary>
     /// <returns></returns>
@@ -120,7 +147,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// Load the table, applying any filters the child assigns
     /// </summary>
     /// <returns></returns>
-    public virtual async Task LoadData(bool keepPage=false)
+    public virtual async Task LoadData(bool keepPage=false, bool updateCounts=false)
     {
         if (!keepPage) CurrentPage = 1;
         // Update and show loading state
@@ -144,6 +171,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
                 .ToListAsync();
 
         _lastQueryHash = GetFilterStateHash(Filters);
+        if(updateCounts) _filterSnapshot = Filters.ToDictionary(entry => entry.Key, entry => entry.Value.Clone());
         IsLoading = false;
         StateHasChanged();
     }
@@ -327,7 +355,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
             filter.Reset();
         }
 
-        await LoadData();
+        await LoadData(updateCounts:true);
         StateHasChanged();
     }
 }

@@ -44,7 +44,7 @@ public class UniqueAssociateNumberAttribute : ValidationAttribute
 }
 
 /// <summary>
-/// Verify that a an associate exists in AssociateInfo
+/// Verify that an associate exists in AssociateInfo
 /// </summary>
 public class ValidateAssociateExistsAttribute : ValidationAttribute
 {

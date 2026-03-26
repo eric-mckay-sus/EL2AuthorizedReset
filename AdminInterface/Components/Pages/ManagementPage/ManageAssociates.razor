@@ -144,9 +144,9 @@
     /// If it isn't, tell the parent to hide the associated lines
     /// </summary>
     /// <returns></returns>
-    public override async Task LoadData(bool keepPage=false)
+    public override async Task LoadData(bool keepPage=false, bool updateCounts=false)
     {
-        await base.LoadData(keepPage);
+        await base.LoadData(keepPage, updateCounts);
 
         if (target != null && !DataView.Contains(target))
         {

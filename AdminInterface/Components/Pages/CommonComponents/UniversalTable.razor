@@ -79,13 +79,13 @@
                             <td>
                                 @* Only show the expand button if there's an expand binding *@
                                 @if (OnExpand.HasDelegate){
-                                    <button class="btn btn-link p-0 text-secondary" @onclick="() => OnExpand.InvokeAsync(item)" title="Expand">
+                                    <button class="btn btn-link btn-action p-0 text-secondary" @onclick="() => OnExpand.InvokeAsync(item)" title="Expand">
                                         <Icon Name="IconName.List" Size="IconSize.x4" />
                                     </button>
                                 }
                                 @* Only show the delete button if there's a delete binding *@
                                 @if (OnDelete.HasDelegate){
-                                    <button class="btn btn-link p-0 text-danger ms-3" @onclick="() => OnDelete.InvokeAsync(item)" title="Delete">
+                                    <button class="btn btn-link btn-action p-0 text-danger ms-3" @onclick="() => OnDelete.InvokeAsync(item)" title="Delete">
                                         <Icon Name="IconName.Trash" Size="IconSize.x4" />
                                     </button>
                                 }
