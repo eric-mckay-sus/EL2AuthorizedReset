@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
@@ -19,7 +20,7 @@ public class AutoAuthenticationHandler(
     /// <returns>Whether the user is authenticated</returns>
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var principal = await identityService.GetUserPrincipalAsync();
+        ClaimsPrincipal principal = await identityService.GetUserPrincipalAsync();
 
         if (principal.Identity?.IsAuthenticated == true)
         {

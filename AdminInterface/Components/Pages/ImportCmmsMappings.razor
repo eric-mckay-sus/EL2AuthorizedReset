@@ -77,6 +77,8 @@
         // No risk of using null-forgiving operator because the app would have already crashed without a connection
         _connString = Config["ConnectionStrings__DefaultConnection"]!;
         PageSize = 100;
+        CurrentSortColumn="CmmsNum";
+        SortDir = "ascending";
         _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(_connString);
     }
 

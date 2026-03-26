@@ -51,19 +51,19 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
 
         ClaimsPrincipal principal;
         // Extract associate number from remaining (hopefully all numeric) characters
-        if (int.TryParse(associateString, out int assocNum))
+        if (int.TryParse(associateString, out int associateNum))
         {
-            using var context = dbFactory.CreateDbContext();
-            var associate = await context.Set<Associate>()
-                .FirstOrDefaultAsync(a => a.AssocNum == assocNum);
+            using AuthResetDbContext context = dbFactory.CreateDbContext();
+            Associate? associate = await context.Set<Associate>()
+                .FirstOrDefaultAsync(a => a.AssociateNum == associateNum);
 
             if (associate != null)
             {
                 // Create identifier, adding admin role if applicable
-                var claims = new List<Claim> 
-                { 
+                var claims = new List<Claim>
+                {
                     new(ClaimTypes.Name, associate.Name ?? ""),
-                    new("AssocNum", assocNum.ToString()) 
+                    new("AssociateNum", associateNum.ToString())
                 };
 
                 if (associate.IsAdmin)

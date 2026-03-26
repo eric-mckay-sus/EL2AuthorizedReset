@@ -36,7 +36,7 @@ public class Associate
     [Range(1, 99999, ErrorMessage = "Associate number must be five digits")]
     [UniqueAssociateNumber]
     [Column("associateNum")]
-    public int AssocNum { get; set; }
+    public int AssociateNum { get; set; }
 
     [Required(ErrorMessage = "Associate name is required")]
     [MaxLength(32, ErrorMessage = "Associate name must be no longer than 32 characters")]
@@ -69,7 +69,7 @@ public class Associate
 
     public override string ToString()
     {
-        return $"Name: {Name}, Assoc #: {AssocNum}, Badge #: {BadgeNum}";
+        return $"Name: {Name}, Assoc #: {AssociateNum}, Badge #: {BadgeNum}";
     }
 }
 

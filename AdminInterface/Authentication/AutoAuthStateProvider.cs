@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace AdminInterface.Authentication;
@@ -13,7 +14,7 @@ public class AutoAuthStateProvider(IUserIdentityService identityService) : Authe
     /// <returns>The authentication state of the current user</returns>
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var principal = await identityService.GetUserPrincipalAsync();
+        ClaimsPrincipal principal = await identityService.GetUserPrincipalAsync();
         return new AuthenticationState(principal);
     }
 }

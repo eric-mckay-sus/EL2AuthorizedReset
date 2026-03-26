@@ -21,8 +21,8 @@
                     </div>
                     <div class="col-3">
                         <label for="assocNum" class="form-label">Associate Number:</label>
-                        <InputNumber id="assocNum" @bind-Value="NewItem.AssocNum" class="form-control" />
-                        <ValidationMessage For="@(() => NewItem.AssocNum)" />
+                        <InputNumber id="assocNum" @bind-Value="NewItem.AssociateNum" class="form-control" />
+                        <ValidationMessage For="@(() => NewItem.AssociateNum)" />
                     </div>
                     <div class="col-3">
                         <label for="badgeNum" class="form-label">Badge Number:</label>
@@ -126,6 +126,12 @@
         }
     }
 
+    protected override void OnInitialized()
+    {
+        CurrentSortColumn="AssociateNum";
+        SortDir="ascending";
+    }
+
     /// <summary>
     /// If the user leaves the search bar and it is empty,
     /// reload the data to show the full list.
@@ -163,7 +169,7 @@
     protected override IQueryable<Associate> ApplyFilters(IQueryable<Associate> query)
     {
         if(int.TryParse(_searchText, out int assocNum)){
-            query = query.Where(a => a.AssocNum == assocNum);
+            query = query.Where(a => a.AssociateNum == assocNum);
         } else {
             query = query.Where(a => a.Name.Contains(_searchText));
         }

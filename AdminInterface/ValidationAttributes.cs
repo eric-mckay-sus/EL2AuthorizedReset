@@ -36,8 +36,8 @@ public class UniqueAssociateNumberAttribute : ValidationAttribute
         using AuthResetDbContext context = dbFactory!.CreateDbContext();
 
         // Check AssocNum collision
-        if (context.AssociateInfo.Any(a => a.AssocNum == entity.AssocNum))
-            return new ValidationResult($"Associate #{entity.AssocNum} is already in use.", [nameof(Associate.AssocNum)]);
+        if (context.AssociateInfo.Any(a => a.AssociateNum == entity.AssociateNum))
+            return new ValidationResult($"Associate #{entity.AssociateNum} is already in use.", [nameof(Associate.AssociateNum)]);
 
         return ValidationResult.Success;
     }
@@ -56,7 +56,7 @@ public class ValidateAssociateExistsAttribute : ValidationAttribute
         using AuthResetDbContext context = dbFactory!.CreateDbContext();
 
         // FK Check: Does Associate exist?
-        if (!context.AssociateInfo.Any(a => a.AssocNum == al.AssocNum))
+        if (!context.AssociateInfo.Any(a => a.AssociateNum == al.AssocNum))
             return new ValidationResult($"Associate #{al.AssocNum} does not exist.", [nameof(AssociateLine.AssocNum)]);
 
         return ValidationResult.Success;
