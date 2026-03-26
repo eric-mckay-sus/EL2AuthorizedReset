@@ -37,13 +37,13 @@ body {
 }
 
     /* Target icons inside a nav-item */
-    .nav-item ::deep .bi, 
+    .nav-item ::deep .bi,
     .nav-item ::deep i {
         font-size: 1.5rem; /* Icons scale with font size */
         width: 1.5rem;
         height: 1.5rem;
         display: flex;       /* Forces the icon container to center its own SVG */
-        align-items: center; 
+        align-items: center;
         margin-top: 0;       /* Removes any inherited Bootstrap offsets */
         top: 0;              /* Resets any relative positioning */
     }

@@ -1,24 +1,58 @@
+@inherits EntityManagerBase<Lockout, LockoutReset>
 
-namespace AdminInterface.Components.Pages.HomePage;
-public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
-{
+@if (IsLoading) {
+    <div class="text-center p-5">
+        <Spinner Color="SpinnerColor.Primary" />
+        <p class="mt-2 text-muted">Fetching historical data...</p>
+    </div>
+} else {
+    <div class="row overflow-hidden flex-nowrap">
+        @if (DataView.Count > 0){
+            <div>
+                <TablePresenter
+                    TWrite="Lockout"
+                    TRead="LockoutReset"
+                    Base="this"
+                    OnExpand="HandleExpand"
+                    Target="target" />
+            </div>
+        } else{
+            <h4>No results match these criteria</h4>
+        }
+    </div>
+}
+
+@code{
     // Filter accessors for cleaner HTML
-    protected Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
-    protected Filter<string?> FilterReason => GetFilter<string?>("reason");
-    protected Filter<int?> FilterLockoutLevel => GetFilter<int?>("lockoutLevel");
-    protected Filter<string?> FilterStatus => GetFilter<string?>("status");
-    protected Filter<string?> FilterLineName => GetFilter<string?>("lineName");
-    protected Filter<string?> FilterResetter => GetFilter<string?>("resetter");
-    
-    // Time range filters
-    protected Filter<DateTime?> FilterLockAfter => GetFilter<DateTime?>("lockAfter");
-    protected Filter<DateTime?> FilterLockBefore => GetFilter<DateTime?>("lockBefore");
-    protected Filter<DateTime?> FilterResetAfter => GetFilter<DateTime?>("resetAfter");
-    protected Filter<DateTime?> FilterResetBefore => GetFilter<DateTime?>("resetBefore");
+    internal Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
+    internal Filter<string?> FilterReason => GetFilter<string?>("reason");
+    internal Filter<int?> FilterLockoutLevel => GetFilter<int?>("lockoutLevel");
+    internal Filter<string?> FilterStatus => GetFilter<string?>("status");
+    internal Filter<string?> FilterLineName => GetFilter<string?>("lineName");
+    internal Filter<string?> FilterResetter => GetFilter<string?>("resetter");
 
-    protected LockoutReset? target;
-    protected bool isTargeting = false;
-    protected bool lockoutLevelGreaterThan = true;
+    // Time range filters
+    internal Filter<DateTime?> FilterLockAfter => GetFilter<DateTime?>("lockAfter");
+    internal Filter<DateTime?> FilterLockBefore => GetFilter<DateTime?>("lockBefore");
+    internal Filter<DateTime?> FilterResetAfter => GetFilter<DateTime?>("resetAfter");
+    internal Filter<DateTime?> FilterResetBefore => GetFilter<DateTime?>("resetBefore");
+
+    internal bool lockoutLevelGreaterThan = true;
+    private bool _blazorStop = true;
+    [Parameter] public LockoutReset? target { get; set; }
+    [Parameter] public EventCallback<LockoutReset> HandleExpand { get; set; }
+
+    /// <summary>
+    /// Skip LoadData if there's no change that requires a DB hit
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (TotalCount == 0)
+        {
+            await base.OnParametersSetAsync();
+        }
+    }
 
     /// <summary>
     /// When the app loads, fill the filter registry and default sort
@@ -31,6 +65,33 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
         SortDir = "descending";
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!_blazorStop)
+        {
+            _blazorStop = true;
+            // The UI has rendered the new page results. Now it's safe to close.
+            await OnItemChanged.InvokeAsync(target);
+        }
+    }
+
+    /// <summary>
+    /// Override for table refresh that verifies the targeted lockout is still in the dataview.
+    /// If it isn't, tell the parent to hide the associated resets
+    /// </summary>
+    /// <returns></returns>
+    public override async Task LoadData(bool keepPage=false, bool updateCounts=false)
+    {
+        await base.LoadData(keepPage, updateCounts);
+
+        if (target != null && !DataView.Contains(target))
+        {
+            _blazorStop = false;
+        }
+    }
+
     /// <summary>
     /// Load the filter registry for searching the lockout/reset table
     /// </summary>
@@ -41,14 +102,14 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
         Filters["status"] = new Filter<string?>("status", null);
         Filters["lineName"] = new Filter<string?>("lineName", null);
         Filters["resetter"] = new Filter<string?>("resetter", null);
-        
+
         Filters["lockAfter"] = new Filter<DateTime?>("lockAfter", null);
         Filters["lockBefore"] = new Filter<DateTime?>("lockBefore", null);
         Filters["resetAfter"] = new Filter<DateTime?>("resetAfter", null);
         Filters["resetBefore"] = new Filter<DateTime?>("resetBefore", null);
     }
 
-    public override int GetFilterStateHash(Dictionary<string, IFilter> filterDict)
+    private protected override int GetFilterStateHash(Dictionary<string, IFilter> filterDict)
     {
         int hash = base.GetFilterStateHash(filterDict);
 
@@ -106,19 +167,5 @@ public class HomeBase : EntityManagerBase<Lockout, LockoutReset>
             query = query.Where(x => x.ResetTime != null && x.ResetTime <= FilterResetBefore.Value);
 
         return query;
-    }
-
-    public void HandleExpand(LockoutReset row) {
-        if (row.Equals(target)){
-            HandleClose();
-        } else {
-            target = row;
-            isTargeting = true;
-        }
-    }
-
-    public void HandleClose(){
-        target = null;
-        isTargeting = false;
     }
 }

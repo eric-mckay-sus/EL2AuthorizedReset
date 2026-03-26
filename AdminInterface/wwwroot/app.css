@@ -6,8 +6,7 @@ a, .btn-link {
     color: #006bb7;
 }
 
-/* Used by the delete button */
-.btn-link:hover {
+.btn-action:hover {
     transform: scale(1.1);
     transition: transform 0.3s ease-in-out;
     color: hsl(354, 80%, 60%); /* Ensures it stays red on hover */
@@ -68,7 +67,7 @@ h1:focus {
 }
 
 /* Force pagination and headers to stay within the viewport */
-.pagination-container, 
+.pagination-container,
 .query-builder-panel {
     width: 100%;
     max-width: 100%;
@@ -113,7 +112,7 @@ h1:focus {
 
 /* Professional Table Formatting */
 .res-table {
-    min-width: 600px; 
+    min-width: 600px;
     width: 100%;
     border-collapse: separate; /* Required for sticky headers to work correctly */
     border-spacing: 0;
@@ -133,8 +132,8 @@ h1:focus {
     border-bottom: 2px solid #dee2e6;
     white-space: nowrap;
     padding: 12px 8px;
-    
-    text-align: center; 
+
+    text-align: center;
 }
 
 .res-table tbody td {
@@ -142,7 +141,7 @@ h1:focus {
     vertical-align: middle;
     color: #333;
     border-bottom: 1px solid #f0f0f0;
-    
+
     text-align: center;
 }
 
@@ -159,7 +158,7 @@ h1:focus {
 }
 
 @container table-container (max-width: 800px) {
-    .col-LineName, 
+    .col-LineName,
     .col-LockoutTime {
         display: none;
     }
@@ -327,12 +326,12 @@ h1:focus {
 }
 
 .transition-width {
-    transition: flex 0.4s ease-in-out, 
-                max-width 0.4s ease-in-out, 
+    transition: flex 0.4s ease-in-out,
+                max-width 0.4s ease-in-out,
                 width 0.4s ease-in-out;
-    
+
     /* Ensure the element doesn't snap to content size during the move */
-    flex-shrink: 0; 
+    flex-shrink: 0;
     flex-grow: 0;
 }
 
@@ -350,21 +349,21 @@ h1:focus {
 }
 
 .error-page-wrapper {
-    display: flex; 
-    align-items: center; 
+    display: flex;
+    align-items: center;
     justify-content: center;
-    min-height: 80vh; 
+    min-height: 80vh;
     margin: 0;
     min-width: 700px;
 }
 
 .container-sheet {
-    background: white; 
-    padding: 40px; 
+    background: white;
+    padding: 40px;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    max-width: 600px; 
+    max-width: 600px;
     text-align: center;
 }
 
@@ -410,4 +409,16 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type=number] {
   -moz-appearance: textfield;
+}
+
+.filter-content {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0, 0.5, 0, 1), opacity 0.5s linear;
+}
+
+.filter-content.expanded {
+    max-height: 250px;
+    opacity: 1;
 }

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -33,37 +34,41 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
         }
 
         // Check domain and name, verify that they match for SUS (not trivial to trick the environment variables)
-        #if WINDOWS // 99% chance it goes here
-        string[] domainAndUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\');
-        string domain = split[0];
-        associateString = split[1];
-        if (!(domain.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // 99% chance it goes here
         {
-            return new(new ClaimsIdentity());
+            string[] domainAndUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\');
+            string domain = domainAndUser[0];
+            associateString = domainAndUser[1];
+            if (!(domain.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+            {
+                return new(new ClaimsIdentity());
+            }
         }
-        #else // but fall back to environment variables
-        if (!(ENV.UserDomainName.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+        else // but fall back to environment variables
         {
-            return new(new ClaimsIdentity());
+            if (!(ENV.UserDomainName.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+            {
+                return new(new ClaimsIdentity());
+            }
         }
-        #endif
+
         associateString = associateString[4..]; // trim the first four characters (SUSU, but also works for SUSD if an IT person wanted to peek)
 
         ClaimsPrincipal principal;
         // Extract associate number from remaining (hopefully all numeric) characters
-        if (int.TryParse(associateString, out int assocNum))
+        if (int.TryParse(associateString, out int associateNum))
         {
-            using var context = dbFactory.CreateDbContext();
-            var associate = await context.Set<Associate>()
-                .FirstOrDefaultAsync(a => a.AssocNum == assocNum);
+            using AuthResetDbContext context = dbFactory.CreateDbContext();
+            Associate? associate = await context.Set<Associate>()
+                .FirstOrDefaultAsync(a => a.AssociateNum == associateNum);
 
             if (associate != null)
             {
                 // Create identifier, adding admin role if applicable
-                var claims = new List<Claim> 
-                { 
+                var claims = new List<Claim>
+                {
                     new(ClaimTypes.Name, associate.Name ?? ""),
-                    new("AssocNum", assocNum.ToString()) 
+                    new("AssociateNum", associateNum.ToString())
                 };
 
                 if (associate.IsAdmin)

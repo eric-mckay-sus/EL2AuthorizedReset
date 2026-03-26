@@ -1,99 +1,153 @@
 @page "/"
-@inherits HomeBase
 
 <PageTitle>EL2 Auth Reset</PageTitle>
 
 <h2>Lockouts & Resets</h2>
+@if (_searchLockoutsRef != null)
+{
+    <div class="filter-panel mb-3 p-2 border rounded bg-light shadow-sm">
+        <FilterHeader activeFilterCount="_searchLockoutsRef.CountActiveFilters()" pendingFilterCount="_searchLockoutsRef.CountPendingFilters()" @bind-IsCollapsed="_isCollapsed" />
 
-<div class="filter-panel mb-3 p-3 border rounded bg-light">
-    <div class="row g-3">
-        <div class="col-2">
-            <label class="form-label">CMMS #</label>
-            <input type="number" class="form-control" @bind-value="FilterCmmsNum.Value" @bind-value:event="oninput" placeholder="Search machine ID..." />
-        </div>
-        <div class="col-2">
-            <label class="form-label">Status</label>
-            <select class="form-select" @bind="FilterStatus.Value">
-                <option value="">All Records</option>
-                <option value="Locked out">Locked out</option>
-                <option value="Released">Released</option>
-            </select>
-        </div>
-        <div class="col-2">
-            <label class="form-label">Lockout Level</label>
-            <div class="input-group">
-                <button class="btn btn-secondary" 
-                        type="button" 
-                        @onclick="() => lockoutLevelGreaterThan = !lockoutLevelGreaterThan"
-                        title="@(lockoutLevelGreaterThan ? "Search higher lockout level" : "Search lower lockout level")">
-                    @if (lockoutLevelGreaterThan) {
-                        <span class="fw-bold">&ge;</span>
-                    } else {
-                        <span class="fw-bold">&le;</span>
-                    }
-                </button>
-                <input type="number" class="form-control" @bind-value="FilterLockoutLevel.Value" @bind-value:event="oninput" placeholder="Filter lockout level..." />
+        <div class="filter-content @(_isCollapsed ? "" : "expanded")">
+            <hr class="mt-0" />
+            <div class="row g-3">
+                <div class="col-2">
+                    <label class="form-label">CMMS #</label>
+                    <input type="number" class="form-control" @bind-value="_searchLockoutsRef.FilterCmmsNum.Value" @bind-value:event="oninput" placeholder="Search machine ID" />
+                </div>
+                <div class="col-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" @bind="_searchLockoutsRef.FilterStatus.Value">
+                        <option value="">All Records</option>
+                        <option value="Locked out">Locked out</option>
+                        <option value="Released">Released</option>
+                    </select>
+                </div>
+                <div class="col-2">
+                    <label class="form-label">Lockout Level</label>
+                    <div class="input-group">
+                        <button class="btn btn-secondary"
+                                type="button"
+                                @onclick="() => _searchLockoutsRef.lockoutLevelGreaterThan = !_searchLockoutsRef.lockoutLevelGreaterThan"
+                                title="@(_searchLockoutsRef.lockoutLevelGreaterThan ? "Search higher lockout level" : "Search lower lockout level")">
+                            @if (_searchLockoutsRef.lockoutLevelGreaterThan) {
+                                <span class="fw-bold">&ge;</span>
+                            } else {
+                                <span class="fw-bold">&le;</span>
+                            }
+                        </button>
+                        <input type="number" class="form-control" @bind-value="_searchLockoutsRef.FilterLockoutLevel.Value" @bind-value:event="oninput" placeholder="Filter lockout level" />
+                    </div>
+                </div>
+                <div class="col-2">
+                    <label class="form-label">Reason</label>
+                    <input type="text" class="form-control" @bind-value="_searchLockoutsRef.FilterReason.Value" @bind-value:event="oninput" placeholder="Fault description" />
+                </div>
+                <div class="col-2">
+                    <label class="form-label">Resetter Name</label>
+                    <input type="text" class="form-control" @bind-value="_searchLockoutsRef.FilterResetter.Value" @bind-value:event="oninput" placeholder="Enter associate name" />
+                </div>
+                <div class="col-2">
+                    <label class="form-label">Line Name</label>
+                    <input type="text" class="form-control" @bind-value="_searchLockoutsRef.FilterLineName.Value" @bind-value:event="oninput" placeholder="e.g. F24" />
+                </div>
+
+                <div class="col-3">
+                    <label class="form-label">Lockout After</label>
+                    <input type="datetime-local" class="form-control" @bind="_searchLockoutsRef.FilterLockAfter.Value" />
+                </div>
+                <div class="col-3">
+                    <label class="form-label">Lockout Before</label>
+                    <input type="datetime-local" class="form-control" @bind="_searchLockoutsRef.FilterLockBefore.Value" />
+                </div>
+                <div class="col-3">
+                    <label class="form-label">Reset After</label>
+                    <input type="datetime-local" class="form-control" @bind="_searchLockoutsRef.FilterResetAfter.Value" />
+                </div>
+                <div class="col-3">
+                    <label class="form-label">Reset Before</label>
+                    <input type="datetime-local" class="form-control" @bind="_searchLockoutsRef.FilterResetBefore.Value" />
+                </div>
+
+                <div class="col-12 d-flex justify-content-end gap-3">
+                    <button class="btn btn-outline-secondary" @onclick="HandleClear">Clear</button>
+                    <button
+                        class="btn @(_searchLockoutsRef.CountPendingFilters()>0 ? "btn-primary" : "btn-secondary")"
+                        style="cursor: pointer;"
+                        @onclick="ExecuteAndCollapse">
+                        Execute
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="col-2">
-            <label class="form-label">Reason</label>
-            <input type="text" class="form-control" @bind-value="FilterReason.Value" @bind-value:event="oninput" placeholder="Fault description..." />
-        </div>
-        <div class="col-2">
-            <label class="form-label">Resetter Name</label>
-            <input type="text" class="form-control" @bind-value="FilterResetter.Value" @bind-value:event="oninput" placeholder="Enter associate name" />
-        </div>
-        <div class="col-2">
-            <label class="form-label">Line Name</label>
-            <input type="text" class="form-control" @bind-value="FilterLineName.Value" @bind-value:event="oninput" placeholder="e.g. F24" />
-        </div>
+    </div>
+}
 
-        <div class="col-3">
-            <label class="form-label">Lockout After</label>
-            <input type="datetime-local" class="form-control" @bind="FilterLockAfter.Value" />
-        </div>
-        <div class="col-3">
-            <label class="form-label">Lockout Before</label>
-            <input type="datetime-local" class="form-control" @bind="FilterLockBefore.Value" />
-        </div>
-        <div class="col-3">
-            <label class="form-label">Reset After</label>
-            <input type="datetime-local" class="form-control" @bind="FilterResetAfter.Value" />
-        </div>
-        <div class="col-3">
-            <label class="form-label">Reset Before</label>
-            <input type="datetime-local" class="form-control" @bind="FilterResetBefore.Value" />
-        </div>
-
-        <div class="col-12 d-flex justify-content-end gap-3">
-            <button class="btn btn-outline-secondary" @onclick="ClearAllFilters">Clear</button>
-            <button class="btn btn-primary" @onclick="() => LoadData()">Execute</button>
-        </div>
+<div class="row overflow-hidden flex-nowrap">
+    @* Split screen when expanded, otherwise fullscreen the lockout table *@
+    <div class="@(_isTargeting ? "col-7" : "col-12") transition-width">
+        <SearchLockouts @ref="_searchLockoutsRef" target="_target" HandleExpand="HandleExpand" OnItemChanged="HandleLockoutResetNotShown"/>
+    </div>
+    <div class="@(_isTargeting ? "col-5" : "col-0") transition-width overflow-hidden"
+         style="@(_isTargeting ? "" : "display:none;")">
+            @if (_isTargeting) {
+                <TargetedResets target="_target" OnClose="HandleClose" />
+            }
     </div>
 </div>
 
-@if (IsLoading) {
-    <div class="text-center p-5">
-        <Spinner Color="SpinnerColor.Primary" />
-        <p class="mt-2 text-muted">Fetching historical data...</p>
-    </div>
-} else {
-    <div class="row overflow-hidden flex-nowrap">
-        @if (DataView.Count > 0){
-            <div class="@(isTargeting ? "col-7" : "col-12") transition-width">
-                <TablePresenter 
-                    TWrite="Lockout"
-                    TRead="LockoutReset" 
-                    Base="this"
-                    OnExpand="HandleExpand"
-                    target="target" />
-            </div>
-        }
-        <div class="@(isTargeting ? "col-5" : "col-0") transition-width overflow-hidden" 
-            style="@(isTargeting ? "" : "display:none;")">
-            @if (isTargeting) {
-                <FilterResets target="target" OnClose="HandleClose" />
+@code{
+    private SearchLockouts? _searchLockouts;
+    private SearchLockouts? _searchLockoutsRef
+    {
+        get => _searchLockouts;
+        set
+        {
+            if (_searchLockouts != value){
+                _searchLockouts = value;
             }
-        </div>
-    </div>
+        }
+    }
+    private LockoutReset? _target;
+    private bool _isTargeting = false;
+
+    private bool _isCollapsed = false;
+    private void ToggleCollapse() => _isCollapsed = !_isCollapsed;
+
+    private async Task ExecuteAndCollapse(){
+        if (_searchLockoutsRef != null)
+        {
+            await _searchLockoutsRef.LoadData(updateCounts:true);
+            ToggleCollapse();
+        }
+    }
+
+    private async Task HandleClear(){
+        if (_searchLockoutsRef != null)
+        {
+            await _searchLockoutsRef.ClearAllFilters();
+            StateHasChanged(); // For the parent
+        }
+    }
+
+    private void HandleExpand(LockoutReset lockoutReset) {
+        if (lockoutReset.Equals(_target)){
+            HandleClose();
+        } else {
+            _target = lockoutReset;
+            _isTargeting = true;
+        }
+    }
+    private void HandleClose(){
+        _target = null;
+        _isTargeting = false;
+    }
+
+    private void HandleLockoutResetNotShown(LockoutReset changedLockoutReset)
+    {
+        if (_target != null && changedLockoutReset.Equals(_target))
+        {
+            HandleClose();
+        }
+    }
 }

@@ -4,10 +4,10 @@ using AdminInterface;
 using AdminInterface.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Database Configuration
-var connectionString = builder.Configuration["ConnectionStrings__DefaultConnection"];
+string? connectionString = builder.Configuration["ConnectionStrings__DefaultConnection"];
 builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
     options.UseSqlServer(connectionString));
 
@@ -29,7 +29,7 @@ builder.Services.AddBlazorBootstrap();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -43,9 +43,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 /* --- STATUS CODE HANDLING --- */
-// This tells the server: "If you see a 401 or 403, don't tell the browser yet. 
+// This tells the server: "If you see a 401 or 403, don't tell the browser yet.
 // Re-run the pipeline at the root path so Blazor can load and handle it."
-app.UseStatusCodePagesWithReExecute("/"); 
+app.UseStatusCodePagesWithReExecute("/");
 
 app.UseAntiforgery();
 

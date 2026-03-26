@@ -52,7 +52,7 @@
                     <div class="form-actions d-flex justify-content-center gap-4">
                         <button type="button" class="btn btn-outline-secondary btn-lg me-2" @onclick="CancelForm">Cancel</button>
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi @(isEditing ? "bi-floppy" : "bi-plus-lg")"></i> 
+                            <i class="bi @(isEditing ? "bi-floppy" : "bi-plus-lg")"></i>
                             @(isEditing ? "Update Authorization" : "Authorize Line")
                         </button>
                     </div>
@@ -65,18 +65,18 @@
             <div class="col-6">
                 <EditForm Model="this" OnValidSubmit="() => LoadData()">
                     <div class="input-group mb-2">
-                        <InputText 
-                            id="searchBar" 
+                        <InputText
+                            id="searchBar"
                             @bind-Value="searchText"
                             @onblur="HandleBlur"
-                            class="form-control" 
+                            class="form-control"
                             placeholder="Search by line name"
                             autocomplete="off" />
                             @if (!string.IsNullOrEmpty(searchText))
                             {
                                 <span class="input-group-text clear-addon">
-                                    <button type="button" class="btn-close" aria-label="Clear" 
-                                        @onclick="ClearSearchBar" 
+                                    <button type="button" class="btn-close" aria-label="Clear"
+                                        @onclick="ClearSearchBar"
                                         style="font-size: 0.8rem;"></button>
                                 </span>
                             }
@@ -98,11 +98,11 @@
         <Spinner Color="SpinnerColor.Secondary" />
     } else {
         @if (TotalCount > 0) {
-            <TablePresenter 
+            <TablePresenter
             TWrite="AssociateLine"
             TRead="AssocNameLine"
             Base="this"
-            target="targetPermission"
+            Target="targetPermission"
             OnExpand="HandleExpand"
             OnDelete="HandleDelete" />
         } else {
@@ -115,7 +115,7 @@
                     <h3>No lines authorized for @targetAssociate.Name matching "@searchText"</h3>
                 </div>
             }
-            
+
         }
     }
 
@@ -149,6 +149,12 @@
         }) ?? [];
     }
 
+    protected override void OnInitialized()
+    {
+        CurrentSortColumn="AuthorizedLine";
+        SortDir="ascending";
+    }
+
     /// <summary>
     /// Whenever the target associate changes, prime the add form object and force a refresh
     /// </summary>
@@ -164,7 +170,7 @@
     }
 
     /// <summary>
-    /// If the user leaves the search bar and it is empty, 
+    /// If the user leaves the search bar and it is empty,
     /// reload the data to show the full list.
     /// </summary>
     private async Task HandleBlur()
@@ -184,7 +190,7 @@
         NewItem = new AssociateLine();
         NewItem.IsNewRecord = true;
         if (targetAssociate != null){
-            NewItem.AssocNum = targetAssociate.AssocNum;
+            NewItem.AssocNum = targetAssociate.AssociateNum;
         }
     }
 
@@ -201,7 +207,7 @@
         query = query.Where(a => a.Line.Contains(searchText));
 
         // Filter the view by the selected associate number
-        return query.Where(x => x.AssocNum == targetAssociate.AssocNum);
+        return query.Where(x => x.AssocNum == targetAssociate.AssociateNum);
     }
 
     private void HandleExpand(AssocNameLine anl){
@@ -261,7 +267,7 @@
                 context.AssociateToLine.Add(NewItem);
 
             await context.SaveChangesAsync();
-            
+
             // Cleanup state
             isEditing = false;
             IsFormVisible = false;

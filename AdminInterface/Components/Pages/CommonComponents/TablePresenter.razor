@@ -11,9 +11,9 @@
     OnPageChange="Base.ChangePage"
     OnSort="Base.ToggleSort"
     GetSortIcon="Base.GetSortIcon"
-    OnPageSizeChange="Base.AlterPageSize" 
-    target="target"
-    targetStyle="@highlightStyle"
+    OnPageSizeChange="Base.AlterPageSize"
+    Target="Target"
+    TargetStyle="@HighlightStyle"
     OnDelete="OnDelete"
     OnExpand="OnExpand" />
 
@@ -23,6 +23,6 @@
 
     [Parameter] public EventCallback<TRead> OnDelete { get; set; }
     [Parameter] public EventCallback<TRead> OnExpand { get; set; }
-    [Parameter] public TRead target { get; set; }
-    [Parameter] public string highlightStyle { get; set; }
+    [Parameter] public TRead Target { get; set; }
+    [Parameter] public string HighlightStyle { get; set; }
 }

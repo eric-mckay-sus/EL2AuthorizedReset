@@ -10,13 +10,13 @@ namespace AdminInterface;
 public class Filter<T> : IFilter
 {
     public string Key { get; set; } // The name of this filter (for self-identification)
-    public bool IsActive { get; set; } // Whether this filter is being used in the current query (thus its value should be used). Automatically updated on value change
+    public bool IsActive { get; private set; } // Whether this filter is being used in the current query (thus its value should be used). Automatically updated on value change
 
     private T? _value; // The internal value held by the filter
     public T? Value // The methods of accessing and modifying the filter's value
-    { 
+    {
         get => _value;
-        set 
+        set
         {
             _value = value;
             IsActive = !IsDefault(value);
@@ -35,25 +35,16 @@ public class Filter<T> : IFilter
     }
 
     /// <summary>
+    /// Creates a deep copy of this filter
+    /// </summary>
+    /// <returns>The deep copy</returns>
+    public IFilter Clone() => new Filter<T>(Key, Value);
+
+    /// <summary>
     /// Gets the value of this filter as a nullable object
     /// </summary>
     /// <returns>An object representing the generic type used by the value</returns>
     public object? GetValue() => Value;
-
-    /// <summary>
-    /// Assigns a new value to this filter. Successfully triggers OnChanged callback
-    /// </summary>
-    /// <param name="val">The value to assign to this filter</param>
-    public void SetValue(object? val) => Value = (T?)val;
-
-    /// <summary>
-    /// Copies the state of another filter to this one
-    /// </summary>
-    /// <param name="other">The IFilter instance to copy from</param>
-    public void CopyFrom(IFilter other)
-    {
-        Value = (T?)other.GetValue();
-    }
 
     /// <summary>
     /// Resets this filter to its default state
@@ -89,7 +80,6 @@ public interface IFilter
     string Key { get; set; }
     bool IsActive { get; }
     object? GetValue();
-    void SetValue(object? val);
-    void CopyFrom(IFilter other);
+    IFilter Clone();
     void Reset();
 }

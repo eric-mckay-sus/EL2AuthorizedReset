@@ -7,7 +7,7 @@
 
 <PageTitle>Import CMMS Mappings</PageTitle>
 
-<h1>Update CMMS Mappings</h1>
+<h2>Update CMMS Mappings</h2>
 
 <p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number when a machine moves between lines</p>
 <p>Date of last upload: <strong>@_lastUpload</strong></p>
@@ -18,30 +18,30 @@
         <label for="fileInput" class="upload-button">
             <i class="bi bi-cloud-arrow-up" style="font-size: 26px"></i> Choose CSV File
         </label>
-        <InputFile id="fileInput" OnChange="e => selectedFile = e.File" accept=".csv" class="hidden-input-overlay"
+        <InputFile id="fileInput" OnChange="e => _selectedFile = e.File" accept=".csv" class="hidden-input-overlay"
             @ondragenter="HandleDragEnter"
             @ondragleave="HandleDragLeave"
             @ondragover="HandleDragOver"
             @ondrop="HandleDrop" />
 
-        @if (!string.IsNullOrEmpty(uploadStatus))
+        @if (!string.IsNullOrEmpty(_uploadStatus))
         {
             <div class="status-box mt-3">
                 <div class="status-header">Upload Progress</div>
-                <pre class="status-content">@uploadStatus</pre>
+                <pre class="status-content">@_uploadStatus</pre>
             </div>
         }
     </div>
 </div>
 
-@if (selectedFile != null && !_isUploading)
+@if (_selectedFile != null && !_isUploading)
 {
     <Alert Color="AlertColor.Danger" Class="mt-3 animate-fade-in">
-        <p><strong>File Selected:</strong> @selectedFile.Name (@(selectedFile.Size / 1024) KB)</p>
+        <p><strong>File Selected:</strong> @_selectedFile.Name (@(_selectedFile.Size / 1024) KB)</p>
         <Button Color="ButtonColor.Danger" @onclick="HandleFileSelection">
             <Icon Name="IconName.ExclamationTriangle" /> Confirm Overwrite
         </Button>
-        <Button Color="ButtonColor.Secondary" @onclick="() => selectedFile = null">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="() => _selectedFile = null">Cancel</Button>
     </Alert>
 }
 
@@ -55,11 +55,11 @@
 }
 
 @code {
-    private string? uploadStatus;
+    private string? _uploadStatus;
     private string _lastUpload = "Loading...";
-    private string connString;
-    private IBrowserFile? selectedFile;
-    private string? filePath;
+    private string _connString;
+    private IBrowserFile? _selectedFile;
+    private string? _filePath;
     private bool _isDragging = false;
     private bool _isUploading = false;
 
@@ -75,9 +75,11 @@
     protected override async Task OnInitializedAsync()
     {
         // No risk of using null-forgiving operator because the app would have already crashed without a connection
-        connString = Config["ConnectionStrings__DefaultConnection"]!;
+        _connString = Config["ConnectionStrings__DefaultConnection"]!;
         PageSize = 100;
-        _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(connString);
+        CurrentSortColumn="CmmsNum";
+        SortDir = "ascending";
+        _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(_connString);
     }
 
     /// <summary>
@@ -87,11 +89,11 @@
     private async Task HandleFileSelection()
     {
         _isUploading = true;
-        uploadStatus = "Uploading...";
+        _uploadStatus = "Uploading...";
         try
         {
             // The file content is read into a stream
-            var file = selectedFile;
+            var file = _selectedFile;
             if (file != null)
             {
                 // Putting the upload in wwwroot works well from a file management standpoint, but will trigger dotnet watch's hot reload. dotnet run works fine.
@@ -99,36 +101,36 @@
                 Directory.CreateDirectory(uploadsFolderPath); // Ensure directory exists
 
                 string trustedFileName = $"cmms_mappings_{DateTime.Now:yyyy-MM-dd}";
-                filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(file.Name));
+                _filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(file.Name));
 
                 // Stream the file data from the element to the server
-                using (FileStream stream = new(filePath, FileMode.Create))
+                using (FileStream stream = new(_filePath, FileMode.Create))
                 {
                     await file.OpenReadStream().CopyToAsync(stream);
                 }
 
-                uploadStatus = ""; // Clear so the upload has a fresh slate
+                _uploadStatus = ""; // Clear so the upload has a fresh slate
                 var blazorProgress = new Progress<string>(msg => {
-                    uploadStatus += msg; // Get reported message
+                    _uploadStatus += msg; // Get reported message
                     StateHasChanged(); // Refresh UI to show reported message
                 });
-                await CmmsCsvReader.Upload(filePath, connString, blazorProgress);
+                await CmmsCsvReader.Upload(_filePath, _connString, blazorProgress);
                 await Task.Delay(100);
-                if (uploadStatus.Contains("Connecting...Connected!\nUploading...Complete!")){
-                    uploadStatus += $"\n'{file.Name}' successfully uploaded.";
-                    _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(connString);
+                if (_uploadStatus.Contains("Connecting...Connected!\nUploading...Complete!")){
+                    _uploadStatus += $"\n'{file.Name}' successfully uploaded.";
+                    _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(_connString);
                 }
                 await LoadData();
             }
         }
         catch (Exception ex)
         {
-            uploadStatus += $"\nUpload failed: {ex.Message}";
+            _uploadStatus += $"\nUpload failed: {ex.Message}";
         }
         finally{
-            if(!string.IsNullOrWhiteSpace(filePath))
-                File.Delete(filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
-            selectedFile = null;
+            if(!string.IsNullOrWhiteSpace(_filePath))
+                File.Delete(_filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
+            _selectedFile = null;
             _isUploading = false;
         }
     }

@@ -3,7 +3,7 @@
 @code {
     private ConfirmDialog dialog = default!;
 
-    public async Task<bool> ConfirmAsync<T>(T item)
+    internal async Task<bool> ConfirmAsync<T>(T item)
     {
         var options = new ConfirmDialogOptions
         {
@@ -23,7 +23,7 @@
 
     private static string GetDeleteMessage<T>(T item) => item switch
     {
-        Associate assoc => $"{assoc.Name} (#{assoc.AssocNum}) from the system",
+        Associate assoc => $"{assoc.Name} (#{assoc.AssociateNum}) from the system",
         AssocNameLine anl => $"line {anl.Line} from the authorized reset list for {anl.AssocName} (#{anl.AssocNum})",
         _ => $"this {item?.GetType()}"
     };
