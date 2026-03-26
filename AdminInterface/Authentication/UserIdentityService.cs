@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -33,20 +34,24 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
         }
 
         // Check domain and name, verify that they match for SUS (not trivial to trick the environment variables)
-        #if WINDOWS // 99% chance it goes here
-        string[] domainAndUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\');
-        string domain = split[0];
-        associateString = split[1];
-        if (!(domain.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // 99% chance it goes here
         {
-            return new(new ClaimsIdentity());
+            string[] domainAndUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\');
+            string domain = domainAndUser[0];
+            associateString = domainAndUser[1];
+            if (!(domain.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+            {
+                return new(new ClaimsIdentity());
+            }
         }
-        #else // but fall back to environment variables
-        if (!(ENV.UserDomainName.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+        else // but fall back to environment variables
         {
-            return new(new ClaimsIdentity());
+            if (!(ENV.UserDomainName.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+            {
+                return new(new ClaimsIdentity());
+            }
         }
-        #endif
+
         associateString = associateString[4..]; // trim the first four characters (SUSU, but also works for SUSD if an IT person wanted to peek)
 
         ClaimsPrincipal principal;
