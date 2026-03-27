@@ -33,17 +33,6 @@ body {
     padding-right: 28px;
 }
 
-.icon-menu-arrow {
-    font-size: 1.2rem;
-    color: hsl(0, 0%, 100%);
-    cursor: pointer;
-    text-align: right;
-}
-
-    .icon-menu-arrow:hover {
-        color: hsl(0, 0%, 80%);
-    }
-
 /* Header shape */
 .sidebar-header {
     height: 3.5rem;
@@ -144,7 +133,7 @@ body {
     top: 0;
     left: 0;
     width: 3.75rem; /* Collapsed width (icon only) */
-    transition: width 0.3s ease;
+    transition: width 0.2s ease;
     z-index: 1000;
     overflow: hidden;
     display: flex;

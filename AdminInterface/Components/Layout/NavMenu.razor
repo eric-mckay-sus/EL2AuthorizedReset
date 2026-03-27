@@ -3,7 +3,7 @@
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<div class="nav-scrollable @NavMenuCssClass" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <div class="sidebar-header">
         <div class="header-content">
             <a class="stanley-icon" href=""></a>
@@ -44,47 +44,3 @@
         </AuthorizeView>
     </nav>
 </div>
-
-@code
-{
-    [Parameter]
-    public EventCallback<bool> ShowIconMenu { get; set; }
-
-    private bool IconMenuActive { get; set; } = true;
-    private bool collapseNavMenu = false;
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("setResizeCallback", DotNetObjectReference.Create(this));
-        }
-    }
-
-    [JSInvokable]
-    public async Task OnResize(bool isBelowThreshold)
-    {
-        if (isBelowThreshold && IconMenuActive)
-        {
-            collapseNavMenu = true;
-            await ToggleIconMenu();
-
-            await ShowIconMenu.InvokeAsync(IconMenuActive);
-
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-
-    private async Task ToggleIconMenu()
-    {
-        IconMenuActive = !IconMenuActive;
-
-        await ShowIconMenu.InvokeAsync(IconMenuActive);
-    }
-}
