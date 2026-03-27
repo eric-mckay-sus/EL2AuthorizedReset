@@ -219,19 +219,38 @@ h1:focus {
     padding-top: 1rem;
 }
 
-.animate-fade-in {
-    animation: slideDown 0.3s ease-in-out;
+/* The accordion wrapper (compressed by default) */
+.expandable-wrapper {
+    display: grid;
+    grid-template-rows: 0fr; /* Start collapsed */
+    transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease,
+                visibility 0.2s;
+    opacity: 0;
+    visibility: hidden;
+    overflow: hidden;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* When collapsing (fade out immediately) */
+.expandable-wrapper:not(.is-expanded) {
+    transition:
+        grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
+        opacity 0.2s ease 0s;
+}
+
+/* Expands the wrapper to the size of its contents */
+.is-expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    /* Delay the opacity so it starts halfway through the height expansion */
+    transition-delay: 0s, 0.2s, 0s;
+}
+
+/* Describes the contents of the accordion */
+.expandable-content {
+    min-height: 0;
+    padding-bottom: 10px;
 }
 
 /* Visual container for the upload area */

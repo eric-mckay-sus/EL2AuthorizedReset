@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using AdminInterface.Components.Pages.CommonComponents;
 using System.Linq.Dynamic.Core;
+using System.Threading.Tasks;
 
 namespace AdminInterface;
 
@@ -33,7 +34,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     public List<TRead> DataView = []; // The view to READ from (type may be different from the one being written)
     public string? ErrorMessage; // The error message for uniqueness constraint, if applicable
     private protected DeleteDialog deleteDialog = default!; // The dialog to show upon pressing the delete button for a row
-    private protected bool IsFormVisible = false; // Whether to show or hide the add form
+    private protected bool _isFormVisible = false; // Whether to show or hide the add form
     public bool IsLoading = true; // Whether the DataView is loading
 
     // For sorting
@@ -186,14 +187,14 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// <summary>
     /// Throw flag to display add form, view handles the actual displaying
     /// </summary>
-    protected void ShowForm() => IsFormVisible = true;
+    protected void ShowForm() => _isFormVisible = true;
 
     /// <summary>
     /// Remove add form flag, clear input and error message
     /// </summary>
-    protected virtual void CancelForm()
+    protected virtual void CloseForm()
     {
-        IsFormVisible = false;
+        _isFormVisible = false;
         NewItem = new TWrite();
         ErrorMessage = null;
     }
@@ -213,7 +214,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
 
             NewItem = new();
             await LoadData();
-            IsFormVisible = false;
+            CloseForm();
         }
         catch (DbUpdateException)
         {

@@ -34,16 +34,23 @@
     </div>
 </div>
 
-@if (_selectedFile != null && !_isUploading)
-{
-    <Alert Color="AlertColor.Danger" Class="mt-3 animate-fade-in">
-        <p><strong>File Selected:</strong> @_selectedFile.Name (@(_selectedFile.Size / 1024) KB)</p>
-        <Button Color="ButtonColor.Danger" @onclick="HandleFileSelection">
-            <Icon Name="IconName.ExclamationTriangle" /> Confirm Overwrite
-        </Button>
-        <Button Color="ButtonColor.Secondary" @onclick="() => _selectedFile = null">Cancel</Button>
-    </Alert>
-}
+<div class="expandable-container">
+    <div class="expandable-wrapper @(_confirmationOpen ? "is-expanded" : "")">
+        <div class="expandable-content">
+            <Alert Color="AlertColor.Danger" Class="mt-3 animate-fade-in">
+                <p>
+                    <strong>File Selected:</strong>
+                    @(_selectedFile?.Name ?? "No file selected")
+                    (@((_selectedFile?.Size ?? 0) / 1024) KB)</p>
+                <Button Color="ButtonColor.Danger" @onclick="HandleFileSelection">
+                    <Icon Name="IconName.ExclamationTriangle" /> Confirm Overwrite
+                </Button>
+                <Button Color="ButtonColor.Secondary" @onclick="() => _selectedFile=null">Cancel</Button>
+            </Alert>
+        </div>
+    </div>
+</div>
+
 
 @if (IsLoading){
     <Spinner Color="SpinnerColor.Primary" />
@@ -62,6 +69,7 @@
     private string? _filePath;
     private bool _isDragging = false;
     private bool _isUploading = false;
+    private bool _confirmationOpen => _selectedFile != null && !_isUploading;
 
     private void HandleDragEnter() => _isDragging = true;
     private void HandleDragOver() => _isDragging = true;

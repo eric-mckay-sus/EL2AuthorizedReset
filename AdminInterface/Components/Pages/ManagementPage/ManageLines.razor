@@ -12,87 +12,94 @@
         }
     </div>
 
-    @if (IsFormVisible) {
-        <div class="form-card mb-3 animate-fade-in">
-            <EditForm Model="@NewItem" OnValidSubmit="@HandleValidSubmit" class="form-card">
-                <DataAnnotationsValidator />
+    <div class="expandable-container">
+        <div class="expandable-wrapper @(_isFormVisible ? "is-expanded" : "")">
+            <div class="expandable-content">
+                <div class="form-card mb-3">
+                    <EditForm Model="@NewItem" OnValidSubmit="@HandleValidSubmit" class="form-card">
+                        <DataAnnotationsValidator />
 
-                <div class="form-container">
-                    <h5 class="form-title">
-                        @(isEditing ? $"Edit Authorization: {NewItem.Line}" : $"Authorize New Line for {targetAssociate.Name}")
-                    </h5>
+                        <div class="form-container">
+                            <h5 class="form-title">
+                                @(_isEditing ? $"Edit Authorization: {NewItem.Line}" : $"Authorize New Line for {targetAssociate.Name}")
+                            </h5>
 
-                    <div class="row">
-                        <div class="col-8">
-                            <label for="lineName" class="form-label">Line Name:</label>
-                            <InputText id="lineName"
-                                    @bind-Value="NewItem.Line"
-                                    class="form-control"
-                                    list="lineOptions"
-                                    disabled="@isEditing"
-                                    autocomplete="off" />
+                            <div class="row">
+                                <div class="col-8">
+                                    <label for="lineName" class="form-label">Line Name:</label>
+                                    <InputText id="lineName"
+                                            @bind-Value="NewItem.Line"
+                                            class="form-control"
+                                            list="lineOptions"
+                                            disabled="@_isEditing"
+                                            autocomplete="off" />
 
-                            <datalist id="lineOptions">
-                                @foreach (var line in allAvailableLines)
-                                {
-                                    <option value="@line" />
-                                }
-                            </datalist>
-                            <ValidationMessage For="@(() => NewItem.Line)" />
+                                    <datalist id="lineOptions">
+                                        @foreach (var line in allAvailableLines)
+                                        {
+                                            <option value="@line" />
+                                        }
+                                    </datalist>
+                                    <ValidationMessage For="@(() => NewItem.Line)" />
+                                </div>
+
+                                <div class="col-4">
+                                    <label for="authLevel" class="form-label">Authorization Level:</label>
+                                    <input id="authLevel" class="form-control" type="number" min="0" max="255"
+                                                @bind="NewItem.AuthLevel" />
+
+                                </div>
+                            </div>
+
+                            <div class="form-actions d-flex justify-content-center gap-4">
+                                <button type="button" class="btn btn-outline-secondary btn-lg me-2" @onclick="CloseForm">Cancel</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi @(_isEditing ? "bi-floppy" : "bi-plus-lg")"></i>
+                                    @(_isEditing ? "Update Authorization" : "Authorize Line")
+                                </button>
+                            </div>
                         </div>
-
-                        <div class="col-4">
-                            <label for="authLevel" class="form-label">Authorization Level:</label>
-                            <input id="authLevel" class="form-control" type="number" min="0" max="255"
-                                        @bind="NewItem.AuthLevel" />
-
-                        </div>
-                    </div>
-
-                    <div class="form-actions d-flex justify-content-center gap-4">
-                        <button type="button" class="btn btn-outline-secondary btn-lg me-2" @onclick="CancelForm">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi @(isEditing ? "bi-floppy" : "bi-plus-lg")"></i>
-                            @(isEditing ? "Update Authorization" : "Authorize Line")
-                        </button>
-                    </div>
+                    </EditForm>
+                    <ErrorDisplay ErrorMessage="@ErrorMessage" />
                 </div>
-            </EditForm>
-            <ErrorDisplay ErrorMessage="@ErrorMessage" />
-        </div>
-    } else {
-        <div class="row">
-            <div class="col-6">
-                <EditForm Model="this" OnValidSubmit="() => LoadData()">
-                    <div class="input-group mb-2">
-                        <InputText
-                            id="searchBar"
-                            @bind-Value="searchText"
-                            @onblur="HandleBlur"
-                            class="form-control"
-                            placeholder="Search by line name"
-                            autocomplete="off" />
-                            @if (!string.IsNullOrEmpty(searchText))
-                            {
-                                <span class="input-group-text clear-addon">
-                                    <button type="button" class="btn-close" aria-label="Clear"
-                                        @onclick="ClearSearchBar"
-                                        style="font-size: 0.8rem;"></button>
-                                </span>
-                            }
-                        <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
-                        <i class="bi bi-arrow-right" style="font-size: 1.5rem;"></i></button>
-                    </div>
-                </EditForm>
             </div>
         </div>
+        <div class="expandable-wrapper @(!_isFormVisible ? "is-expanded" : "")">
+            <div class="expandable-content">
+                <div class="row">
+                    <div class="col-6">
+                        <EditForm Model="this" OnValidSubmit="() => LoadData()">
+                            <div class="input-group mb-2">
+                                <InputText
+                                    id="searchBar"
+                                    @bind-Value="_searchText"
+                                    @onblur="HandleBlur"
+                                    class="form-control"
+                                    placeholder="Search by line name"
+                                    autocomplete="off" />
+                                    @if (!string.IsNullOrEmpty(_searchText))
+                                    {
+                                        <span class="input-group-text clear-addon">
+                                            <button type="button" class="btn-close" aria-label="Clear"
+                                                @onclick="ClearSearchBar"
+                                                style="font-size: 0.8rem;"></button>
+                                        </span>
+                                    }
+                                <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                                <i class="bi bi-arrow-right" style="font-size: 1.5rem;"></i></button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
 
-        <div class="d-flex justify-content-center mb-3">
-            <button class="btn btn-success" @onclick="ShowForm">
-                <i class="bi bi-plus-lg"></i> Add New Line for @targetAssociate.Name
-            </button>
+                <div class="d-flex justify-content-center mb-3">
+                    <button class="btn btn-success" @onclick="ShowForm">
+                        <i class="bi bi-plus-lg"></i> Add New Line for @targetAssociate.Name
+                    </button>
+                </div>
+            </div>
         </div>
-    }
+    </div>
 
     @if (IsLoading){
         <Spinner Color="SpinnerColor.Secondary" />
@@ -106,13 +113,13 @@
             OnExpand="HandleExpand"
             OnDelete="HandleDelete" />
         } else {
-            @if (string.IsNullOrEmpty(searchText)){
+            @if (string.IsNullOrEmpty(_searchText)){
                 <div class="text-center">
                     <h3>No lines authorized for @targetAssociate.Name</h3>
                 </div>
             } else {
                 <div class="text-center">
-                    <h3>No lines authorized for @targetAssociate.Name matching "@searchText"</h3>
+                    <h3>No lines authorized for @targetAssociate.Name matching "@_searchText"</h3>
                 </div>
             }
 
@@ -128,8 +135,8 @@
     [Inject] private IMemoryCache _cache { get; set; } = default!;
     private AssocNameLine? targetPermission { get; set; }
     private List<string> allAvailableLines = [];
-    private bool isEditing = false;
-    private string searchText = "";
+    private bool _isEditing = false;
+    private string _searchText = "";
 
     /// <summary>
     /// When the page is initialized, create a cache of all available lines for the autofill
@@ -151,7 +158,7 @@
 
     protected override void OnInitialized()
     {
-        CurrentSortColumn="AuthorizedLine";
+        CurrentSortColumn="Line";
         SortDir="ascending";
     }
 
@@ -175,7 +182,7 @@
     /// </summary>
     private async Task HandleBlur()
     {
-        if (string.IsNullOrWhiteSpace(searchText))
+        if (string.IsNullOrWhiteSpace(_searchText))
         {
             // In this state, the user intent is the same as ClearSearchBar.
             await LoadData();
@@ -204,13 +211,17 @@
         if (targetAssociate == null) return query.Where(x => false); // Return empty if no associate selected
 
         // Filter by line name
-        query = query.Where(a => a.Line.Contains(searchText));
+        query = query.Where(a => a.Line.Contains(_searchText));
 
         // Filter the view by the selected associate number
         return query.Where(x => x.AssocNum == targetAssociate.AssociateNum);
     }
 
     private void HandleExpand(AssocNameLine anl){
+        if (_isFormVisible && _isEditing){
+            CloseForm();
+            return;
+        }
         // Map the read-only view item to the writeable model
         NewItem = new AssociateLine {
             AssocNum = anl.AssocNum,
@@ -219,14 +230,14 @@
             IsNewRecord=false // bypass PK validation
         };
         targetPermission = anl;
-        isEditing = true;
-        IsFormVisible = true;
+        _isEditing = true;
+        _isFormVisible = true;
         StateHasChanged();
     }
 
-    protected override void CancelForm(){
-        isEditing = false;
-        base.CancelForm();
+    protected override void CloseForm(){
+        _isEditing = false;
+        base.CloseForm();
         ResetNewItem();
     }
 
@@ -261,7 +272,7 @@
         {
             using var context = DbFactory.CreateDbContext();
 
-            if (isEditing) // If coming from an edit, use UPDATE
+            if (_isEditing) // If coming from an edit, use UPDATE
                 context.AssociateToLine.Update(NewItem);
             else // If coming from an add, use INSERT
                 context.AssociateToLine.Add(NewItem);
@@ -269,8 +280,8 @@
             await context.SaveChangesAsync();
 
             // Cleanup state
-            isEditing = false;
-            IsFormVisible = false;
+            _isEditing = false;
+            _isFormVisible = false;
             ResetNewItem(); // Clears inputs for the next action
             await LoadData();
         }
@@ -285,7 +296,7 @@
     /// </summary>
     /// <returns></returns>
     protected async Task ClearSearchBar(){
-        searchText = "";
+        _searchText = "";
         await LoadData();
     }
 }
