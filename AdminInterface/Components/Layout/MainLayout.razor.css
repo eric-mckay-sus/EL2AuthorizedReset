@@ -1,7 +1,7 @@
 .page {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
 }
 
 main {
@@ -10,31 +10,15 @@ main {
 
 .sidebar {
     background-image: linear-gradient(225deg, #00095e 50%, #222222 70%);
+    width: 4rem; /* Collapsed state */
+    transition: width 0.3s ease;
+    overflow: hidden;
+    z-index: 1000;
 }
 
-.top-row {
-    background-color: #ffffff;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
-    display: flex;
-    align-items: center;
+.sidebar:hover {
+    width: 250px;
 }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
 
 @media (max-width: 640.98px) {
     .top-row {
@@ -70,7 +54,7 @@ main {
     }
 
     .sidebar {
-        width: 250px !important;
+        width: 3.75rem;
         position: sticky;
         top: 0;
     }

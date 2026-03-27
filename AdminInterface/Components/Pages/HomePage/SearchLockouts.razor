@@ -1,5 +1,82 @@
 @inherits EntityManagerBase<Lockout, LockoutReset>
 
+<div class="filter-panel mb-3 p-2 border rounded bg-light shadow-sm">
+    <FilterHeader activeFilterCount="CountActiveFilters()" pendingFilterCount="CountPendingFilters()" @bind-IsCollapsed="_isCollapsed" />
+
+    <div class="filter-content @(_isCollapsed ? "" : "expanded")">
+        <hr class="mt-0" />
+        <div class="row g-3">
+            <div class="col-2">
+                <label class="form-label">CMMS #</label>
+                <input type="number" class="form-control" @bind-value="FilterCmmsNum.Value" @bind-value:event="oninput" placeholder="Search machine ID" />
+            </div>
+            <div class="col-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" @bind="FilterStatus.Value">
+                    <option value="">All Records</option>
+                    <option value="Locked out">Locked out</option>
+                    <option value="Released">Released</option>
+                </select>
+            </div>
+            <div class="col-2">
+                <label class="form-label">Lockout Level</label>
+                <div class="input-group">
+                    <button class="btn btn-secondary"
+                            type="button"
+                            @onclick="() => lockoutLevelGreaterThan = !lockoutLevelGreaterThan"
+                            title="@(lockoutLevelGreaterThan ? "Search higher lockout level" : "Search lower lockout level")">
+                        @if (lockoutLevelGreaterThan) {
+                            <span class="fw-bold">&ge;</span>
+                        } else {
+                            <span class="fw-bold">&le;</span>
+                        }
+                    </button>
+                    <input type="number" class="form-control" @bind-value="FilterLockoutLevel.Value" @bind-value:event="oninput" placeholder="Filter lockout level" />
+                </div>
+            </div>
+            <div class="col-2">
+                <label class="form-label">Reason</label>
+                <input type="text" class="form-control" @bind-value="FilterReason.Value" @bind-value:event="oninput" placeholder="Fault description" />
+            </div>
+            <div class="col-2">
+                <label class="form-label">Resetter Name</label>
+                <input type="text" class="form-control" @bind-value="FilterResetter.Value" @bind-value:event="oninput" placeholder="Enter associate name" />
+            </div>
+            <div class="col-2">
+                <label class="form-label">Line Name</label>
+                <input type="text" class="form-control" @bind-value="FilterLineName.Value" @bind-value:event="oninput" placeholder="e.g. F24" />
+            </div>
+
+            <div class="col-3">
+                <label class="form-label">Lockout After</label>
+                <input type="datetime-local" class="form-control" @bind="FilterLockAfter.Value" />
+            </div>
+            <div class="col-3">
+                <label class="form-label">Lockout Before</label>
+                <input type="datetime-local" class="form-control" @bind="FilterLockBefore.Value" />
+            </div>
+            <div class="col-3">
+                <label class="form-label">Reset After</label>
+                <input type="datetime-local" class="form-control" @bind="FilterResetAfter.Value" />
+            </div>
+            <div class="col-3">
+                <label class="form-label">Reset Before</label>
+                <input type="datetime-local" class="form-control" @bind="FilterResetBefore.Value" />
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-3">
+                <button class="btn btn-outline-secondary" @onclick="HandleClear">Clear</button>
+                <button
+                    class="btn @(CountPendingFilters()>0 ? "btn-primary" : "btn-secondary")"
+                    style="cursor: pointer;"
+                    @onclick="ExecuteAndCollapse">
+                    Execute
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @if (IsLoading) {
     <div class="text-center p-5">
         <Spinner Color="SpinnerColor.Primary" />
@@ -14,7 +91,7 @@
                     TRead="LockoutReset"
                     Base="this"
                     OnExpand="HandleExpand"
-                    Target="target" />
+                    Target="Target" />
             </div>
         } else{
             <h4>No results match these criteria</h4>
@@ -39,7 +116,9 @@
 
     internal bool lockoutLevelGreaterThan = true;
     private bool _blazorStop = true;
-    [Parameter] public LockoutReset? target { get; set; }
+    private bool _isCollapsed = false;
+    private void ToggleCollapse() => _isCollapsed = !_isCollapsed;
+    [Parameter] public LockoutReset? Target { get; set; }
     [Parameter] public EventCallback<LockoutReset> HandleExpand { get; set; }
 
     /// <summary>
@@ -73,8 +152,18 @@
         {
             _blazorStop = true;
             // The UI has rendered the new page results. Now it's safe to close.
-            await OnItemChanged.InvokeAsync(target);
+            await OnItemChanged.InvokeAsync(Target);
         }
+    }
+
+    private async Task ExecuteAndCollapse(){
+        await LoadData(updateCounts:true);
+        ToggleCollapse();
+    }
+
+    private async Task HandleClear(){
+        await ClearAllFilters();
+        @* StateHasChanged(); // For the parent *@
     }
 
     /// <summary>
@@ -86,7 +175,7 @@
     {
         await base.LoadData(keepPage, updateCounts);
 
-        if (target != null && !DataView.Contains(target))
+        if (Target != null && !DataView.Contains(Target))
         {
             _blazorStop = false;
         }
