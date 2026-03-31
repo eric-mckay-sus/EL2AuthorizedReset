@@ -1,23 +1,27 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
-
-<div class="top-row navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">AuthReset</a>
-    </div>
-</div>
+@inject IJSRuntime JS
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <div class="sidebar-header">
+        <div class="header-content">
+            <a class="stanley-icon" href=""></a>
+            <a class="header-brand" href="">Authorized Reset</a>
+        </div>
+    </div>
+
     <nav class="flex-column">
         <div class="nav-item">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <Icon Name="IconName.Clock" /> Historical Records
+                <Icon Name="IconName.Clock" />
+                <label>Historical Records</label>
             </NavLink>
         </div>
         <div class="nav-item">
             <NavLink class="nav-link" href="view-lines">
-                <Icon Name="IconName.FilterSquare" /> View Line Status
+                <Icon Name="IconName.FilterSquare" />
+                <label>View Line Status</label>
             </NavLink>
         </div>
 
@@ -25,13 +29,15 @@
             <Authorized>
                 <div class="nav-item">
                     <NavLink class="nav-link" href="manage">
-                        <Icon Name="IconName.PeopleFill" /> Manage Associates & Lines
+                        <Icon Name="IconName.PeopleFill" />
+                        <label>Manage Associates & <br> Lines</label>
                     </NavLink>
                 </div>
 
                 <div class="nav-item">
                     <NavLink class="nav-link" href="import-cmms-mappings">
-                        <Icon Name="IconName.CloudArrowUpFill" /> Update CMMS
+                        <Icon Name="IconName.CloudArrowUpFill" />
+                        <label>Update CMMS</label>
                     </NavLink>
                 </div>
             </Authorized>

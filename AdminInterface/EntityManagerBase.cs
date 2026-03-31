@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using AdminInterface.Components.Pages.CommonComponents;
 using System.Linq.Dynamic.Core;
+using BlazorBootstrap;
 
 namespace AdminInterface;
 
@@ -14,7 +15,8 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     where TWrite : class, new()
     where TRead : class, new()
 {
-    [Inject] private protected IDbContextFactory<AuthResetDbContext> DbFactory { get; set; } = default!; // The thread-safe DB context generator
+    [Inject] private protected IDbContextFactory<AuthResetDbContext> _dbFactory { get; set; } = default!; // The thread-safe DB context generator
+    [Inject] private protected ToastService _toastService { get; set; } = default!;
     [Parameter] public EventCallback<TRead> OnItemChanged { get; set; } // An event to detect when an item might not appear in the DataView
 
     // Filter registry to hold all active filters
@@ -33,7 +35,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     public List<TRead> DataView = []; // The view to READ from (type may be different from the one being written)
     public string? ErrorMessage; // The error message for uniqueness constraint, if applicable
     private protected DeleteDialog deleteDialog = default!; // The dialog to show upon pressing the delete button for a row
-    private protected bool IsFormVisible = false; // Whether to show or hide the add form
+    private protected bool _isFormVisible = false; // Whether to show or hide the add form
     public bool IsLoading = true; // Whether the DataView is loading
 
     // For sorting
@@ -154,7 +156,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         IsLoading = true;
         StateHasChanged();
 
-        using AuthResetDbContext context = await DbFactory.CreateDbContextAsync();
+        using AuthResetDbContext context = await _dbFactory.CreateDbContextAsync();
 
         // Gets all results (delayed execution)
         IQueryable<TRead> query = context.Set<TRead>().AsNoTracking();
@@ -186,14 +188,14 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// <summary>
     /// Throw flag to display add form, view handles the actual displaying
     /// </summary>
-    protected void ShowForm() => IsFormVisible = true;
+    protected void ShowForm() => _isFormVisible = true;
 
     /// <summary>
     /// Remove add form flag, clear input and error message
     /// </summary>
-    protected virtual void CancelForm()
+    protected virtual void CloseForm()
     {
-        IsFormVisible = false;
+        _isFormVisible = false;
         NewItem = new TWrite();
         ErrorMessage = null;
     }
@@ -207,13 +209,14 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         ErrorMessage = null;
         try
         {
-            using AuthResetDbContext context = DbFactory.CreateDbContext();
+            using AuthResetDbContext context = _dbFactory.CreateDbContext();
             context.Set<TWrite>().Add(NewItem);
             await context.SaveChangesAsync();
 
+            ShowSuccessToast();
             NewItem = new();
             await LoadData();
-            IsFormVisible = false;
+            CloseForm();
         }
         catch (DbUpdateException)
         {
@@ -227,8 +230,14 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     }
 
     /// <summary>
+    /// Hook for children to display toast before NewItem is cleared
+    /// </summary>
+    protected virtual void ShowSuccessToast() { return; }
+
+    /// <summary>
     /// Assigns default behavior for removing a row from the database
     /// MUST be overridden in child if TRead is not the same type as TWrite (recommend interface between the two)
+    /// Override if toast is desired
     /// </summary>
     /// <param name="context">The current DB context</param>
     /// <param name="item">The item to delete</param>
@@ -257,7 +266,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     {
         if (await deleteDialog.ConfirmAsync(item))
         {
-            using AuthResetDbContext context = DbFactory.CreateDbContext();
+            using AuthResetDbContext context = _dbFactory.CreateDbContext();
             await ExecuteDelete(context, item);
 
             if (OnItemChanged.HasDelegate)

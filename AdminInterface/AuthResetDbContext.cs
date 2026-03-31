@@ -96,7 +96,7 @@ public class AssociateLine : IAssociateLink
     public int AssocNum { get; set; }
 
     [Required(ErrorMessage = "Line name is required")]
-    [MaxLength(32, ErrorMessage = "Line name must be no longer than 8 characters (try truncating)")]
+    [MaxLength(8, ErrorMessage = "Line name must be no longer than 8 characters (try truncating)")]
     [ValidateLineExists]
     [Column("lineName")]
     public string Line { get; set; }
