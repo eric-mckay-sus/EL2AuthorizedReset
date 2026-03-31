@@ -1,6 +1,7 @@
 ﻿@using AdminInterface
 @using Microsoft.Extensions.Caching.Memory
 @inherits EntityManagerBase<AssociateLine, AssocNameLine>
+@inject ToastService toastService
 
 <PageTitle>Manage Lines</PageTitle>
 
@@ -147,7 +148,7 @@
         allAvailableLines = await _cache.GetOrCreateAsync("AllLinesList", async entry =>
         {
             entry.SlidingExpiration = TimeSpan.FromHours(1);
-            using var context = DbFactory.CreateDbContext();
+            using var context = _dbFactory.CreateDbContext();
             return await context.CmmsToLineName
                 .Select(x => x.LineName)
                 .Where(x => !string.IsNullOrEmpty(x))
@@ -160,6 +161,7 @@
     {
         CurrentSortColumn="Line";
         SortDir="ascending";
+        PageSize=10;
     }
 
     /// <summary>
@@ -257,6 +259,7 @@
             context.AssociateToLine.Remove(toDelete);
             await context.SaveChangesAsync();
         }
+        toastService.Notify(new(ToastType.Danger, $"Removed {item.Line} from {item.AssocName}'s privileges."));
     }
 
     /// <summary>
@@ -270,7 +273,7 @@
         ErrorMessage = null;
         try
         {
-            using var context = DbFactory.CreateDbContext();
+            using var context = _dbFactory.CreateDbContext();
 
             if (_isEditing) // If coming from an edit, use UPDATE
                 context.AssociateToLine.Update(NewItem);
@@ -278,6 +281,18 @@
                 context.AssociateToLine.Add(NewItem);
 
             await context.SaveChangesAsync();
+
+            var info = await context.Set<AssocNameLine>().FindAsync(NewItem.AssocNum, NewItem.Line);
+            string displayName = info?.AssocName ?? $"Associate {NewItem.AssocNum}";
+
+            string message = $"Saved {displayName}'s privilege on {NewItem.Line}";
+            if(_isEditing){
+                message = $"Updated {displayName}'s auth level on {NewItem.Line} to {NewItem.AuthLevel}";
+            }
+            else{
+                message = $"Added {NewItem.Line} to the authorized reset list for {displayName}";
+            }
+            toastService.Notify(new(ToastType.Success, message));
 
             // Cleanup state
             _isEditing = false;

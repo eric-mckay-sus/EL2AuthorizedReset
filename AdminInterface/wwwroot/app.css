@@ -452,3 +452,8 @@ input[type=number] {
     display: inline-block; /* Aligns with text if used inline */
     flex-shrink: 0;
 }
+
+.toast .toast-body {
+    font-size: 1.1rem;
+}
+

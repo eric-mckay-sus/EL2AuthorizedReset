@@ -3,6 +3,7 @@
 @inherits EntityManagerBase<CmmsLine, CmmsLine>
 @inject IWebHostEnvironment Environment
 @inject IConfiguration Config
+@inject ToastService ToastService
 @attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>Import CMMS Mappings</PageTitle>
@@ -11,7 +12,9 @@
 
 <p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number when a machine moves between lines</p>
 <p>Date of last upload: <strong>@_lastUpload</strong></p>
-<Alert Color="AlertColor.Warning" Class="d-inline-block"><Icon Name="IconName.ExclamationDiamond" /> If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>)</Alert>
+<Alert Color="AlertColor.Warning" Class="d-inline-block"><Icon Name="IconName.ExclamationDiamond" />
+    If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>, all machines will have no connection to their old line)
+</Alert>
 
 <div class="centered-container mb-3">
     <div class="upload-card @(_isDragging ? "drag-active" : "")">
@@ -101,20 +104,19 @@
         try
         {
             // The file content is read into a stream
-            var file = _selectedFile;
-            if (file != null)
+            if (_selectedFile != null)
             {
                 // Putting the upload in wwwroot works well from a file management standpoint, but will trigger dotnet watch's hot reload. dotnet run works fine.
                 var uploadsFolderPath = Path.Combine(Environment.WebRootPath, "uploads");
                 Directory.CreateDirectory(uploadsFolderPath); // Ensure directory exists
 
                 string trustedFileName = $"cmms_mappings_{DateTime.Now:yyyy-MM-dd}";
-                _filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(file.Name));
+                _filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(_selectedFile.Name));
 
                 // Stream the file data from the element to the server
                 using (FileStream stream = new(_filePath, FileMode.Create))
                 {
-                    await file.OpenReadStream().CopyToAsync(stream);
+                    await _selectedFile.OpenReadStream().CopyToAsync(stream);
                 }
 
                 _uploadStatus = ""; // Clear so the upload has a fresh slate
@@ -125,7 +127,7 @@
                 await CmmsCsvReader.Upload(_filePath, _connString, blazorProgress);
                 await Task.Delay(100);
                 if (_uploadStatus.Contains("Connecting...Connected!\nUploading...Complete!")){
-                    _uploadStatus += $"\n'{file.Name}' successfully uploaded.";
+                    _toastService.Notify(new(ToastType.Success, $"\n'{_selectedFile.Name  ?? "CSV"}' successfully uploaded."));
                     _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(_connString);
                 }
                 await LoadData();
