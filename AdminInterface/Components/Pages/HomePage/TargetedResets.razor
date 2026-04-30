@@ -35,7 +35,7 @@
 }
 
 @code {
-    [Parameter] public LockoutReset target { get; set; }
+    [Parameter] public LockoutReset? target { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     private Filter<bool?> FilterDenialType => GetFilter<bool?>("denialType");
     /// <summary>
@@ -84,7 +84,7 @@
     /// <param name="e">The change event thrown by the dropdown</param>
     /// <returns></returns>
     private async Task ChangeDenialType(ChangeEventArgs e){
-        string val = e.Value?.ToString();
+        string val = e.Value?.ToString() ?? string.Empty;
         FilterDenialType.Value = string.IsNullOrWhiteSpace(val) ? null : bool.Parse(val);
         await LoadData();
     }

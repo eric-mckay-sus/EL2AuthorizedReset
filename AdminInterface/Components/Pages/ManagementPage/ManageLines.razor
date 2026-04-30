@@ -14,7 +14,7 @@
     </div>
 
     <div class="expandable-container">
-        <div class="expandable-wrapper @(_isFormVisible ? "is-expanded" : "")">
+        <div class="expandable-wrapper @(IsFormVisible ? "is-expanded" : "")">
             <div class="expandable-content">
                 <div class="form-card mb-3">
                     <EditForm Model="@NewItem" OnValidSubmit="@HandleValidSubmit" class="form-card">
@@ -22,7 +22,7 @@
 
                         <div class="form-container">
                             <h5 class="form-title">
-                                @(_isEditing ? $"Edit Authorization: {NewItem.Line}" : $"Authorize New Line for {targetAssociate.Name}")
+                                @(isEditing ? $"Edit Authorization: {NewItem.Line}" : $"Authorize New Line for {targetAssociate.Name}")
                             </h5>
 
                             <div class="row">
@@ -32,7 +32,7 @@
                                             @bind-Value="NewItem.Line"
                                             class="form-control"
                                             list="lineOptions"
-                                            disabled="@_isEditing"
+                                            disabled="@isEditing"
                                             autocomplete="off" />
 
                                     <datalist id="lineOptions">
@@ -55,8 +55,8 @@
                             <div class="form-actions d-flex justify-content-center gap-4">
                                 <button type="button" class="btn btn-outline-secondary btn-lg me-2" @onclick="CloseForm">Cancel</button>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi @(_isEditing ? "bi-floppy" : "bi-plus-lg")"></i>
-                                    @(_isEditing ? "Update Authorization" : "Authorize Line")
+                                    <i class="bi @(isEditing ? "bi-floppy" : "bi-plus-lg")"></i>
+                                    @(isEditing ? "Update Authorization" : "Authorize Line")
                                 </button>
                             </div>
                         </div>
@@ -65,7 +65,7 @@
                 </div>
             </div>
         </div>
-        <div class="expandable-wrapper @(!_isFormVisible ? "is-expanded" : "")">
+        <div class="expandable-wrapper @(!IsFormVisible ? "is-expanded" : "")">
             <div class="expandable-content">
                 <div class="row">
                     <div class="col-6">
@@ -73,12 +73,12 @@
                             <div class="input-group mb-2">
                                 <InputText
                                     id="searchBar"
-                                    @bind-Value="_searchText"
+                                    @bind-Value="searchText"
                                     @onblur="HandleBlur"
                                     class="form-control"
                                     placeholder="Search by line name"
                                     autocomplete="off" />
-                                    @if (!string.IsNullOrEmpty(_searchText))
+                                    @if (!string.IsNullOrEmpty(searchText))
                                     {
                                         <span class="input-group-text clear-addon">
                                             <button type="button" class="btn-close" aria-label="Clear"
@@ -114,44 +114,48 @@
             OnExpand="HandleExpand"
             OnDelete="HandleDelete" />
         } else {
-            @if (string.IsNullOrEmpty(_searchText)){
+            @if (string.IsNullOrEmpty(searchText)){
                 <div class="text-center">
                     <h3>No lines authorized for @targetAssociate.Name</h3>
                 </div>
             } else {
                 <div class="text-center">
-                    <h3>No lines authorized for @targetAssociate.Name matching "@_searchText"</h3>
+                    <h3>No lines authorized for @targetAssociate.Name matching "@searchText"</h3>
                 </div>
             }
 
         }
     }
 
-    <DeleteDialog @ref="deleteDialog" />
+    <DeleteDialog @ref="DeleteDialog" />
 }
 
 @code {
     [Parameter, EditorRequired] public Associate targetAssociate { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Inject] private IMemoryCache _cache { get; set; } = default!;
+    [Inject] private IMemoryCache cache { get; set; } = default!;
     private AssocNameLine? targetPermission { get; set; }
     private List<string> allAvailableLines = [];
-    private bool _isEditing = false;
-    private string _searchText = "";
+    private bool isEditing = false;
+    private string searchText = "";
 
     /// <summary>
-    /// When the page is initialized, create a cache of all available lines for the autofill
+    /// When the page is initialized, create a cache of all available lines for the autofill.
     /// </summary>
+    /// <remarks>
+    /// Strictly speaking, the database guarantees line name to be non-null, so the null-handling here is overkill.
+    /// But it quiets the compiler and shouldn't affect performance, so I see this as a win.
+    /// </remarks>
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        allAvailableLines = await _cache.GetOrCreateAsync("AllLinesList", async entry =>
+        allAvailableLines = await cache.GetOrCreateAsync("AllLinesList", async entry =>
         {
             entry.SlidingExpiration = TimeSpan.FromHours(1);
-            using var context = _dbFactory.CreateDbContext();
+            using AuthResetDbContext context = DbFactory.CreateDbContext();
             return await context.CmmsToLineName
-                .Select(x => x.LineName)
-                .Where(x => !string.IsNullOrEmpty(x))
+                .Select(x => x.LineName ?? string.Empty) // Coalesce nulls to empty
+                .Where(x => x != string.Empty) // then filter out empty entirely (effectively handling null and empty simultaneously)
                 .Distinct()
                 .ToListAsync();
         }) ?? [];
@@ -184,7 +188,7 @@
     /// </summary>
     private async Task HandleBlur()
     {
-        if (string.IsNullOrWhiteSpace(_searchText))
+        if (string.IsNullOrWhiteSpace(searchText))
         {
             // In this state, the user intent is the same as ClearSearchBar.
             await LoadData();
@@ -213,14 +217,14 @@
         if (targetAssociate == null) return query.Where(x => false); // Return empty if no associate selected
 
         // Filter by line name
-        query = query.Where(a => a.Line.Contains(_searchText));
+        query = query.Where(a => a.Line != null && a.Line.Contains(searchText));
 
         // Filter the view by the selected associate number
         return query.Where(x => x.AssocNum == targetAssociate.AssociateNum);
     }
 
     private void HandleExpand(AssocNameLine anl){
-        if (_isFormVisible && _isEditing){
+        if (IsFormVisible && isEditing){
             CloseForm();
             return;
         }
@@ -232,13 +236,13 @@
             IsNewRecord=false // bypass PK validation
         };
         targetPermission = anl;
-        _isEditing = true;
-        _isFormVisible = true;
+        isEditing = true;
+        IsFormVisible = true;
         StateHasChanged();
     }
 
     protected override void CloseForm(){
-        _isEditing = false;
+        isEditing = false;
         base.CloseForm();
         ResetNewItem();
     }
@@ -273,9 +277,9 @@
         ErrorMessage = null;
         try
         {
-            using var context = _dbFactory.CreateDbContext();
+            using var context = DbFactory.CreateDbContext();
 
-            if (_isEditing) // If coming from an edit, use UPDATE
+            if (isEditing) // If coming from an edit, use UPDATE
                 context.AssociateToLine.Update(NewItem);
             else // If coming from an add, use INSERT
                 context.AssociateToLine.Add(NewItem);
@@ -286,7 +290,7 @@
             string displayName = info?.AssocName ?? $"Associate {NewItem.AssocNum}";
 
             string message = $"Saved {displayName}'s privilege on {NewItem.Line}";
-            if(_isEditing){
+            if(isEditing){
                 message = $"Updated {displayName}'s auth level on {NewItem.Line} to {NewItem.AuthLevel}";
             }
             else{
@@ -295,8 +299,8 @@
             toastService.Notify(new(ToastType.Success, message));
 
             // Cleanup state
-            _isEditing = false;
-            _isFormVisible = false;
+            isEditing = false;
+            IsFormVisible = false;
             ResetNewItem(); // Clears inputs for the next action
             await LoadData();
         }
@@ -311,7 +315,7 @@
     /// </summary>
     /// <returns></returns>
     protected async Task ClearSearchBar(){
-        _searchText = "";
+        searchText = "";
         await LoadData();
     }
 }

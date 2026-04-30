@@ -3,7 +3,6 @@
 @inherits EntityManagerBase<CmmsLine, CmmsLine>
 @inject IWebHostEnvironment Environment
 @inject IConfiguration Config
-@inject ToastService ToastService
 @attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>Import CMMS Mappings</PageTitle>
@@ -67,7 +66,7 @@
 @code {
     private string? _uploadStatus;
     private string _lastUpload = "Loading...";
-    private string _connString;
+    private string connString = string.Empty;
     private IBrowserFile? _selectedFile;
     private string? _filePath;
     private bool _isDragging = false;
@@ -86,11 +85,11 @@
     protected override async Task OnInitializedAsync()
     {
         // No risk of using null-forgiving operator because the app would have already crashed without a connection
-        _connString = Config["ConnectionStrings__DefaultConnection"]!;
+        connString = Config["ConnectionStrings__DefaultConnection"]!;
         PageSize = 100;
         CurrentSortColumn="CmmsNum";
         SortDir = "ascending";
-        _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(_connString);
+        _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(connString);
     }
 
     /// <summary>
@@ -124,11 +123,11 @@
                     _uploadStatus += msg; // Get reported message
                     StateHasChanged(); // Refresh UI to show reported message
                 });
-                await CmmsCsvReader.Upload(_filePath, _connString, blazorProgress);
+                await CmmsCsvReader.Upload(_filePath, connString, blazorProgress);
                 await Task.Delay(100);
                 if (_uploadStatus.Contains("Connecting...Connected!\nUploading...Complete!")){
-                    _toastService.Notify(new(ToastType.Success, $"\n'{_selectedFile.Name  ?? "CSV"}' successfully uploaded."));
-                    _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(_connString);
+                    ToastService.Notify(new(ToastType.Success, $"\n'{_selectedFile.Name  ?? "CSV"}' successfully uploaded."));
+                    _lastUpload = await CmmsCsvReader.GetLastUpdatedDate(connString);
                 }
                 await LoadData();
             }

@@ -23,6 +23,6 @@
 
     [Parameter] public EventCallback<TRead> OnDelete { get; set; }
     [Parameter] public EventCallback<TRead> OnExpand { get; set; }
-    [Parameter] public TRead Target { get; set; }
-    [Parameter] public string HighlightStyle { get; set; }
+    [Parameter] public TRead? Target { get; set; }
+    [Parameter] public string? HighlightStyle { get; set; }
 }

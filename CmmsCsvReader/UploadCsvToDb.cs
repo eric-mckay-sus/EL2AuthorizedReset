@@ -1,52 +1,78 @@
-﻿using Microsoft.Data.SqlClient;
-using ENV = System.Environment;
+﻿// <copyright file="UploadCsvToDb.cs" company="Stanley Electric US Co. Inc.">
+// Copyright (c) 2026 Stanley Electric US Co. Inc. Licensed under the MIT License.
+// </copyright>
+
+namespace CmmsCsvReader;
+
+using Microsoft.Data.SqlClient;
+using static Environment;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
 using System.Data;
 
-namespace CmmsCsvReader;
+/// <summary>
+/// Represents a line's essential information as it appears in the CSV.
+/// </summary>
 public class Line
 {
+    /// <summary>
+    /// Gets or sets the machine's CMMS number.
+    /// </summary>
     public int CmmsNum { get; set; }
-    public string Name { get; set; }
+
+    /// <summary>
+    /// Gets or sets the machine's line name.
+    /// </summary>
+    public required string Name { get; set; }
 }
 
+/// <summary>
+/// A <see cref="ClassMap"/> for the <see cref="Line"/> class.
+/// </summary>
 public sealed class LineMap : ClassMap<Line>
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LineMap"/> class.
+    /// Maps column names as they appear in the CSV to field names in the <see cref="Line"/> object.
+    /// </summary>
     public LineMap()
     {
-        Map(m => m.CmmsNum).Name("CMMS #");
-        Map(m => m.Name).Name("Location");
+        this.Map(m => m.CmmsNum).Name("CMMS #");
+        this.Map(m => m.Name).Name("Location");
     }
 }
 
 /// <summary>
 /// A CSV parser to get the current mappings of CMMS numbers to line names.
-/// Upon successful parsing, replaces the current dataset in the DB
+/// Upon successful parsing, replaces the current dataset in the DB.
 /// </summary>
 public class UploadCsvToDb
 {
     /// <summary>
-    /// Entry point for the program. Parses the entire file for mappings and adds them all to the database
+    /// Entry point for the program. Parses the entire file for mappings and adds them all to the database.
+    /// Do not use this method if you wish to not print to the console.
     /// </summary>
-    /// <param name="args">The file to parse (must be a CSV of the correct format)</param>
-    static async Task Main(string[] args)
+    /// <param name="args">The file to parse (must be a CSV of the correct format).</param>
+    /// <returns>A Task representing that the program has finished.</returns>
+    public static async Task Main(string[] args)
     {
         if (args.Length == 0)
         {
             PrintInRed("No file argument detected. Please retry and supply path for file from which to harvest line mappings.");
             return;
         }
+
         string file = args[0];
-        if (!File.Exists(file)) {
+        if (!File.Exists(file))
+        {
             PrintInRed($"The file you specified ({file}) could not be found. Please check your spelling and try again. The path may be relative to this program or absolute.");
             return;
         }
 
-        string? server=ENV.GetEnvironmentVariable("DB_SERVER"), user=ENV.GetEnvironmentVariable("DB_USER"), password=ENV.GetEnvironmentVariable("DB_PASS"), name=ENV.GetEnvironmentVariable("DB_NAME");
+        string? server = GetEnvironmentVariable("DB_SERVER"), user = GetEnvironmentVariable("DB_USER"), password = GetEnvironmentVariable("DB_PASS"), name = GetEnvironmentVariable("DB_NAME");
 
-        if(string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name))
         {
             PrintInRed("One or more environment variables for database connection are missing. Please reload your terminal (or its context) and try again.");
             return;
@@ -58,47 +84,40 @@ public class UploadCsvToDb
             UserID = user,
             Password = password,
             InitialCatalog = name,
-            TrustServerCertificate = true //TODO insecure, eventually require certificate verification
+            TrustServerCertificate = true, // TODO insecure, eventually require certificate verification
         };
-        
+
+        Progress<string> consoleProgress = new (msg => Console.Write(msg));
+
         Console.WriteLine($"Date of last upload: {await GetLastUpdatedDate(builder.ConnectionString)}");
         Console.WriteLine($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {file}. Proceed? (y/n)");
 
-        if (!Console.ReadLine().Equals("y", StringComparison.OrdinalIgnoreCase)) return; // default to cancel if user does not input y or Y
+        if (!Console.ReadLine().Equals("y", StringComparison.OrdinalIgnoreCase))
+        {
+            return; // default to cancel if user does not input y or Y
+        }
 
-        var consoleProgress = new Progress<string>(msg => Console.Write(msg));
         await Upload(file, builder.ConnectionString, consoleProgress);
     }
 
     /// <summary>
-    /// Prints the specified string to standard output in red
+    /// Gets the date this table was last updated (from the extended metadata).
     /// </summary>
-    /// <param name="toPrint">The string to print</param>
-    private static void PrintInRed(string toPrint)
-    {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(toPrint);
-        Console.ResetColor();
-    }
-
-    /// <summary>
-    /// Gets the date this table was last updated (from the extended metadata)
-    /// </summary>
-    /// <param name="connectionString">The connection string to use to check the metadata</param>
-    /// <returns></returns>
+    /// <param name="connectionString">The connection string to use to check the metadata.</param>
+    /// <returns>A Task holding the date that the CMMS-line mappings were last updated.</returns>
     public static async Task<string> GetLastUpdatedDate(string connectionString)
     {
         const string sql = @"
-            SELECT CAST(value AS NVARCHAR(MAX)) AS Value 
+            SELECT CAST(value AS NVARCHAR(MAX)) AS Value
             FROM sys.fn_listextendedproperty(N'dateLastUpdated', N'SCHEMA', N'dbo', N'TABLE', N'cmmsToLineName', default, default)";
 
         try
         {
-            using SqlConnection connection = new(connectionString);
-            using SqlCommand command = new(sql, connection);
-            
+            using SqlConnection connection = new (connectionString);
+            using SqlCommand command = new (sql, connection);
+
             await connection.OpenAsync();
-            
+
             // ExecuteScalar is most efficient here since we only expect one row and one column
             object? result = await command.ExecuteScalarAsync();
 
@@ -111,16 +130,16 @@ public class UploadCsvToDb
     }
 
     /// <summary>
-    /// Uploads the CSV file at filepath to the database
+    /// Uploads the CSV file at filepath to the database.
     /// </summary>
-    /// <param name="filepath">The path of the CSV to upload</param>
-    /// <param name="progress">The IProgress implementation to which the progress should be reported</param>
+    /// <param name="filepath">The path of the CSV to upload.</param>
+    /// <param name="progress">The IProgress implementation to which the progress should be reported.</param>
     public static async Task Upload(string filepath, string connectionString, IProgress<string>? progress = null)
     {
         // Called as a conditional Console.Write
         void report(string msg) => progress?.Report(msg);
 
-        if(!Path.GetExtension(filepath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+        if (!Path.GetExtension(filepath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
         {
             report("The file you provided is not a CSV. Please ensure the input file is of the correct filetype and format, then try again");
             return;
@@ -136,17 +155,17 @@ public class UploadCsvToDb
 
         var maxLengths = new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Location"] = 8
+            ["Location"] = 8,
         };
         using IDataReader trunc = new TruncatingDataReader(dr, maxLengths);
         // The above section is very fast because it doesn't actually do any parsing, so it doesn't make sense to report.
 
         report("Connecting...");
-        using SqlConnection connection = new(connectionString);
+        using SqlConnection connection = new (connectionString);
         await connection.OpenAsync();
 
         using var transaction = connection.BeginTransaction();
-        using SqlBulkCopy bulkCopy = new(connection, SqlBulkCopyOptions.CheckConstraints, transaction);
+        using SqlBulkCopy bulkCopy = new (connection, SqlBulkCopyOptions.CheckConstraints, transaction);
         bulkCopy.DestinationTableName = "EL2AuthorizedReset.dbo.CmmsToLineName";
         bulkCopy.ColumnMappings.Add("Cmms #", "cmmsNum");
         bulkCopy.ColumnMappings.Add("Location", "lineName");
@@ -184,5 +203,16 @@ public class UploadCsvToDb
             report($"Bulk Copy Error: {ex.Message}\n");
             throw; // so the caller knows it failed
         }
+    }
+
+    /// <summary>
+    /// Prints the specified string to standard output in red.
+    /// </summary>
+    /// <param name="toPrint">The string to print.</param>
+    private static void PrintInRed(string toPrint)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine(toPrint);
+        Console.ResetColor();
     }
 }

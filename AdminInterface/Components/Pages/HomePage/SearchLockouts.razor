@@ -224,7 +224,7 @@
 
         // Reason (Partial match)
         if (FilterReason.IsActive)
-            query = query.Where(x => x.Reason.Contains(FilterReason.Value!));
+            query = query.Where(x => x.Reason != null && x.Reason.Contains(FilterReason.Value!));
 
         // Lockout Level (< or >)
         if (FilterLockoutLevel.IsActive)

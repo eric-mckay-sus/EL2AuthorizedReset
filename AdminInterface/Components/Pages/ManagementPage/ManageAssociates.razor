@@ -6,7 +6,7 @@
 <h2>Add/Remove an Associate</h2>
 
 <div class="expandable-container">
-    <div class="expandable-wrapper @(_isFormVisible ? "is-expanded" : "")">
+    <div class="expandable-wrapper @(IsFormVisible ? "is-expanded" : "")">
         <div class="expandable-content">
             <div class="form-card mb-3">
                 <EditForm Model="@NewItem" OnValidSubmit="@HandleValidSubmit">
@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <div class="expandable-wrapper @(!_isFormVisible ? "is-expanded" : "")">
+    <div class="expandable-wrapper @(!IsFormVisible ? "is-expanded" : "")">
         <div class="expandable-content">
              @if (target == null && HandleExpand.HasDelegate){
                 <h6 class="mb-2">Click the three lines next to an associate to see their authorized lines</h6>
@@ -92,7 +92,7 @@
     }
 }
 
-<DeleteDialog @ref="deleteDialog" />
+<DeleteDialog @ref="DeleteDialog" />
 
 @code{
     private string _searchText = "";
@@ -168,7 +168,7 @@
         if(int.TryParse(_searchText, out int numeric)){
             query = query.Where(a => a.AssociateNum == numeric || a.BadgeNum == numeric);
         } else {
-            query = query.Where(a => a.Name.Contains(_searchText));
+            query = query.Where(a => a.Name != null && a.Name.Contains(_searchText));
         }
         return query;
     }
@@ -184,12 +184,12 @@
 
     protected override void ShowSuccessToast()
     {
-        _toastService.Notify(new(ToastType.Success, $"{NewItem.Name} was added to the database"));
+        ToastService.Notify(new(ToastType.Success, $"{NewItem.Name} was added to the database"));
     }
 
     protected override async Task ExecuteDelete(AuthResetDbContext context, Associate item)
     {
         await base.ExecuteDelete(context, item);
-        _toastService.Notify(new(ToastType.Danger, $"Removed {item.Name} and all their privileges"));
+        ToastService.Notify(new(ToastType.Danger, $"Removed {item.Name} and all their privileges"));
     }
 }
