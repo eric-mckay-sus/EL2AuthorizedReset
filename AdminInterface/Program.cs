@@ -5,10 +5,11 @@
 namespace AdminInterface;
 
 using Microsoft.EntityFrameworkCore;
-using AdminInterface.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 
+using AdminInterface.Authentication;
 using AdminInterface.Components;
+using InterProcessIO;
 
 /// <summary>
 /// Hosts the application startup and configuration.
@@ -24,14 +25,13 @@ public static class Program
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
         // Database Configuration
-        string? connectionString = builder.Configuration["ConnectionStrings__DefaultConnection"];
         builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
-            options.UseSqlServer(connectionString));
+            options.UseSqlServer(Config.GetConnectionString()));
 
+        // Authentication & Authorization
         builder.Services.AddScoped<IUserIdentityService, UserIdentityService>();
         builder.Services.AddMemoryCache();
 
-        // Authentication & Authorization
         builder.Services.AddAuthentication("AutoAuth")
             .AddAutoAuthentication();
 

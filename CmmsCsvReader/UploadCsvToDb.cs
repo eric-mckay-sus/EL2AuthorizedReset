@@ -11,6 +11,8 @@ using CsvHelper.Configuration;
 using System.Globalization;
 using System.Data;
 
+using InterProcessIO;
+
 /// <summary>
 /// Represents a line's essential information as it appears in the CSV.
 /// </summary>
@@ -50,54 +52,107 @@ public sealed class LineMap : ClassMap<Line>
 public class UploadCsvToDb
 {
     /// <summary>
+    /// Determines where user input comes from.
+    /// </summary>
+    private readonly IInputProvider input;
+
+    /// <summary>
+    /// Determines where/how program output is displayed.
+    /// </summary>
+    private readonly IOutputProvider output;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UploadCsvToDb"/> class.
+    /// By default, uses the console for input and output.
+    /// </summary>
+    public UploadCsvToDb()
+    {
+        this.input = new ConsoleInputProvider();
+        this.output = new ConsoleReporter();
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UploadCsvToDb"/> class, using the specified input and output providers.
+    /// </summary>
+    /// <param name="inputProvider">The instance of IInputProvider to be used to get input regarding model mapping details.</param>
+    /// <param name="outputProvider">The instance of IReportOutputProvider to be used for displaying program results.</param>
+    public UploadCsvToDb(IInputProvider inputProvider, IOutputProvider outputProvider)
+    {
+        this.input = inputProvider;
+        this.output = outputProvider;
+    }
+
+    /// <summary>
     /// Entry point for the program. Parses the entire file for mappings and adds them all to the database.
-    /// Do not use this method if you wish to not print to the console.
     /// </summary>
     /// <param name="args">The file to parse (must be a CSV of the correct format).</param>
-    /// <returns>A Task representing that the program has finished.</returns>
+    /// <returns>A Task representing the completion of this program.</returns>
     public static async Task Main(string[] args)
     {
-        if (args.Length == 0)
+        // If there was an input location argument, pass it along (no validation here)
+        string? potentialFile = null;
+        if (args.Length > 0)
         {
-            PrintInRed("No file argument detected. Please retry and supply path for file from which to harvest line mappings.");
-            return;
+            potentialFile = args[0];
         }
 
-        string file = args[0];
-        if (!File.Exists(file))
+        // Exit static by creating an uploader
+        UploadCsvToDb uploader = new ();
+
+        // Then give it the green light
+        await uploader.ExecuteAsync(potentialFile);
+    }
+
+    /// <summary>
+    /// Designated entry point for outside projects. Parses the entire file for mappings and adds them all to the database.
+    /// </summary>
+    /// <param name="filename">The file to parse (must be a CSV of the correct format).</param>
+    /// <returns>A Task representing that the model mappings have been updated.</returns>
+    public async Task<UploadResult> ExecuteAsync(string? filename = null)
+    {
+        string path = Config.InputLocation;
+        if (string.IsNullOrWhiteSpace(filename))
         {
-            PrintInRed($"The file you specified ({file}) could not be found. Please check your spelling and try again. The path may be relative to this program or absolute.");
-            return;
+            await this.Report($"No file specified. Defaulting to config file input location ({path}).\n");
+        }
+        else
+        {
+            path = filename;
         }
 
-        string? server = GetEnvironmentVariable("DB_SERVER"), user = GetEnvironmentVariable("DB_USER"), password = GetEnvironmentVariable("DB_PASS"), name = GetEnvironmentVariable("DB_NAME");
-
-        if (string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name))
+        // Path validation
+        try
         {
-            PrintInRed("One or more environment variables for database connection are missing. Please reload your terminal (or its context) and try again.");
-            return;
+            if (Directory.Exists(path))
+            {
+                await this.Report($"Path '{filename}' is a directory, which is not supported by this uploader. Using Config default ({path}).\n", ReportLevel.WARNING);
+            }
+            else if (!File.Exists(path))
+            {
+                await this.Report($"Path '{filename}' could not be found. Using Config default ({path}).\n", ReportLevel.WARNING);
+            }
+            else if (!Path.GetExtension(path).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                await this.Report($"The file you specified ({path}) is not a CSV. Please select a CSV file and try again.\n", ReportLevel.ERROR);
+                return UploadResult.ErroredOut;
+            }
+
+            await this.Report($"Date of last upload: {await GetLastUpdatedDate(Config.GetConnectionString())}\n", ReportLevel.IMPORTANT);
+            bool confirmOverwrite = await this.input.GetConfirmAsync(new ($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {path}. Proceed?", ReportLevel.WARNING));
+
+            if (!confirmOverwrite)
+            {
+                return UploadResult.Canceled; // default to cancel if user does not confirm explicitly
+            }
+
+            await this.Upload(path, Config.GetConnectionString());
+            return UploadResult.Complete;
         }
-
-        var builder = new SqlConnectionStringBuilder
+        catch (Exception ex)
         {
-            DataSource = server,
-            UserID = user,
-            Password = password,
-            InitialCatalog = name,
-            TrustServerCertificate = true, // TODO insecure, eventually require certificate verification
-        };
-
-        Progress<string> consoleProgress = new (msg => Console.Write(msg));
-
-        Console.WriteLine($"Date of last upload: {await GetLastUpdatedDate(builder.ConnectionString)}");
-        Console.WriteLine($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {file}. Proceed? (y/n)");
-
-        if (!Console.ReadLine().Equals("y", StringComparison.OrdinalIgnoreCase))
-        {
-            return; // default to cancel if user does not input y or Y
+            await this.Report($"Fatal error: {ex.Message}\n", ReportLevel.ERROR);
+            return UploadResult.ErroredOut;
         }
-
-        await Upload(file, builder.ConnectionString, consoleProgress);
     }
 
     /// <summary>
@@ -105,7 +160,7 @@ public class UploadCsvToDb
     /// </summary>
     /// <param name="connectionString">The connection string to use to check the metadata.</param>
     /// <returns>A Task holding the date that the CMMS-line mappings were last updated.</returns>
-    public static async Task<string> GetLastUpdatedDate(string connectionString)
+    private static async Task<string> GetLastUpdatedDate(string connectionString)
     {
         const string sql = @"
             SELECT CAST(value AS NVARCHAR(MAX)) AS Value
@@ -133,54 +188,46 @@ public class UploadCsvToDb
     /// Uploads the CSV file at filepath to the database.
     /// </summary>
     /// <param name="filepath">The path of the CSV to upload.</param>
-    /// <param name="progress">The IProgress implementation to which the progress should be reported.</param>
-    public static async Task Upload(string filepath, string connectionString, IProgress<string>? progress = null)
+    /// <param name="connectionString">The DB connection string.</param>
+    /// <returns>A Task representing that the upload is complete.</returns>
+    private async Task Upload(string filepath, string connectionString)
     {
-        // Called as a conditional Console.Write
-        void report(string msg) => progress?.Report(msg);
-
-        if (!Path.GetExtension(filepath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
-        {
-            report("The file you provided is not a CSV. Please ensure the input file is of the correct filetype and format, then try again");
-            return;
-        }
-
         // The layers of wrapping are kind of disgusting, but we need an open StreamReader to create a CsvReader
         // The CsvReader gives us access to CsvDataReader to stream from the table (to the SqlBulkCopy)
         // Finally, we can use our custom TruncatingDataReader to enforce the 8-character limit while streaming from the CsvDataReader
-        using var reader = new StreamReader(filepath);
-        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+        using StreamReader reader = new (filepath);
+        using CsvReader csv = new (reader, CultureInfo.InvariantCulture);
         csv.Context.RegisterClassMap<LineMap>();
-        using var dr = new CsvDataReader(csv);
+        using CsvDataReader dr = new (csv);
 
-        var maxLengths = new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase)
+        Dictionary<string, int> maxLengths = new (StringComparer.OrdinalIgnoreCase)
         {
             ["Location"] = 8,
         };
         using IDataReader trunc = new TruncatingDataReader(dr, maxLengths);
-        // The above section is very fast because it doesn't actually do any parsing, so it doesn't make sense to report.
 
-        report("Connecting...");
+        // The above section is very fast because it doesn't actually do any parsing, so it doesn't make sense to report.
+        await this.Report("Connecting...");
         using SqlConnection connection = new (connectionString);
         await connection.OpenAsync();
 
-        using var transaction = connection.BeginTransaction();
+        using SqlTransaction transaction = connection.BeginTransaction();
         using SqlBulkCopy bulkCopy = new (connection, SqlBulkCopyOptions.CheckConstraints, transaction);
         bulkCopy.DestinationTableName = "EL2AuthorizedReset.dbo.CmmsToLineName";
         bulkCopy.ColumnMappings.Add("Cmms #", "cmmsNum");
         bulkCopy.ColumnMappings.Add("Location", "lineName");
-        report("Connected!\n");
+        await this.Report("Connected!\n");
 
         // If any DB interaction fails, rollback the entire transaction
         try
         {
             // Now parsing is complete, prepare to completely overwrite old DB state with new
-            using (var deleteCommand = new SqlCommand("TRUNCATE TABLE EL2AuthorizedReset.dbo.CmmsToLineName", connection, transaction))
+            using (SqlCommand deleteCommand = new ("TRUNCATE TABLE EL2AuthorizedReset.dbo.CmmsToLineName", connection, transaction))
             {
                 deleteCommand.ExecuteNonQuery();
             }
 
-            report("Uploading...");
+            await this.Report("Uploading...");
             await bulkCopy.WriteToServerAsync(trunc);
 
             // Log the date of successful update in the extended properties
@@ -190,29 +237,25 @@ public class UploadCsvToDb
                 ELSE
                     EXEC sys.sp_addextendedproperty @name=N'dateLastUpdated', @value=@now, @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'cmmsToLineName';";
 
-            using var command = new SqlCommand(sql, connection, transaction);
+            using SqlCommand command = new (sql, connection, transaction);
             command.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             await command.ExecuteNonQueryAsync();
 
             transaction.Commit();
-            report("Complete!\n");
+            await this.Report("Complete!\n", ReportLevel.SUCCESS);
         }
         catch (Exception ex)
         {
             transaction.Rollback();
-            report($"Bulk Copy Error: {ex.Message}\n");
-            throw; // so the caller knows it failed
+            await this.Report($"Bulk Copy Error: {ex.Message}\n", ReportLevel.ERROR);
         }
     }
 
     /// <summary>
-    /// Prints the specified string to standard output in red.
+    /// Creates a report and passes it to the output provider.
     /// </summary>
-    /// <param name="toPrint">The string to print.</param>
-    private static void PrintInRed(string toPrint)
-    {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(toPrint);
-        Console.ResetColor();
-    }
+    /// <param name="msg">The message to report.</param>
+    /// <param name="level">The message's report level.</param>
+    /// <returns>A Task representing that the report has been displayed to the user.</returns>
+    private async Task Report(string msg, ReportLevel level = ReportLevel.INFO) => await this.output.ReportAsync(new (msg, level));
 }

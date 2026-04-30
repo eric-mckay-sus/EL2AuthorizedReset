@@ -115,7 +115,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// Load the table, applying any filters/sorts the child assigns.
     /// </summary>
     /// <param name="keepPage">Whether to persist the page number (or reset to page 1).</param>
-    /// <param name="updateCounts">Whether the filters have changed, thus the record/filter counts should update.</param>
+    /// <param name="updateCounts">Whether the filters have changed, thus the filter counters should update.</param>
     /// <returns>A Task representing that the data has been reloaded.</returns>
     public virtual async Task LoadData(bool keepPage = false, bool updateCounts = false)
     {
@@ -136,10 +136,7 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
         // Apply filter(s) set by the child, sort, then count
         query = this.ApplyFilters(query);
         query = this.ApplySorting(query);
-        if (updateCounts)
-        {
-            this.TotalCount = await query.CountAsync(); // have to count after sort bc it applies an assumed 'sort col not null' filter
-        }
+        this.TotalCount = await query.CountAsync(); // have to count after sort bc it applies an assumed 'sort col not null' filter
 
         // Execute here (DataView requires a list for display)
         this.DataView = await query
