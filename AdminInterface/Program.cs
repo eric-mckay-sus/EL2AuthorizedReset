@@ -4,8 +4,8 @@
 
 namespace AdminInterface;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 using AdminInterface.Authentication;
 using AdminInterface.Components;

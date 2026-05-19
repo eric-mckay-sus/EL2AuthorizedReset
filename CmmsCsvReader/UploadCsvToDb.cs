@@ -5,7 +5,6 @@
 namespace CmmsCsvReader;
 
 using Microsoft.Data.SqlClient;
-using static Environment;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
@@ -104,6 +103,34 @@ public class UploadCsvToDb
     }
 
     /// <summary>
+    /// Gets the date this table was last updated (from the extended metadata).
+    /// </summary>
+    /// <returns>A Task holding the date that the CMMS-line mappings were last updated.</returns>
+    public static async Task<string> GetLastUpdatedDate()
+    {
+        const string sql = @"
+            SELECT CAST(value AS NVARCHAR(MAX)) AS Value
+            FROM sys.fn_listextendedproperty(N'dateLastUpdated', N'SCHEMA', N'dbo', N'TABLE', N'cmmsToLineName', default, default)";
+
+        try
+        {
+            using SqlConnection connection = new (Config.GetConnectionString());
+            using SqlCommand command = new (sql, connection);
+
+            await connection.OpenAsync();
+
+            // ExecuteScalar is most efficient here since we only expect one row and one column
+            object? result = await command.ExecuteScalarAsync();
+
+            return result?.ToString() ?? "No upload history found.";
+        }
+        catch (Exception)
+        {
+            return "Error retrieving last upload date.";
+        }
+    }
+
+    /// <summary>
     /// Designated entry point for outside projects. Parses the entire file for mappings and adds them all to the database.
     /// </summary>
     /// <param name="filename">The file to parse (must be a CSV of the correct format).</param>
@@ -137,7 +164,7 @@ public class UploadCsvToDb
                 return UploadResult.ErroredOut;
             }
 
-            await this.Report($"Date of last upload: {await GetLastUpdatedDate(Config.GetConnectionString())}\n", ReportLevel.IMPORTANT);
+            await this.Report($"Date of last upload: {await GetLastUpdatedDate()}\n", ReportLevel.IMPORTANT);
             bool confirmOverwrite = await this.input.GetConfirmAsync(new ($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {path}. Proceed?", ReportLevel.WARNING));
 
             if (!confirmOverwrite)
@@ -145,7 +172,7 @@ public class UploadCsvToDb
                 return UploadResult.Canceled; // default to cancel if user does not confirm explicitly
             }
 
-            await this.Upload(path, Config.GetConnectionString());
+            await this.Upload(path);
             return UploadResult.Complete;
         }
         catch (Exception ex)
@@ -156,41 +183,11 @@ public class UploadCsvToDb
     }
 
     /// <summary>
-    /// Gets the date this table was last updated (from the extended metadata).
-    /// </summary>
-    /// <param name="connectionString">The connection string to use to check the metadata.</param>
-    /// <returns>A Task holding the date that the CMMS-line mappings were last updated.</returns>
-    private static async Task<string> GetLastUpdatedDate(string connectionString)
-    {
-        const string sql = @"
-            SELECT CAST(value AS NVARCHAR(MAX)) AS Value
-            FROM sys.fn_listextendedproperty(N'dateLastUpdated', N'SCHEMA', N'dbo', N'TABLE', N'cmmsToLineName', default, default)";
-
-        try
-        {
-            using SqlConnection connection = new (connectionString);
-            using SqlCommand command = new (sql, connection);
-
-            await connection.OpenAsync();
-
-            // ExecuteScalar is most efficient here since we only expect one row and one column
-            object? result = await command.ExecuteScalarAsync();
-
-            return result?.ToString() ?? "No upload history found.";
-        }
-        catch (Exception)
-        {
-            return "Error retrieving last upload date.";
-        }
-    }
-
-    /// <summary>
     /// Uploads the CSV file at filepath to the database.
     /// </summary>
     /// <param name="filepath">The path of the CSV to upload.</param>
-    /// <param name="connectionString">The DB connection string.</param>
     /// <returns>A Task representing that the upload is complete.</returns>
-    private async Task Upload(string filepath, string connectionString)
+    public async Task Upload(string filepath)
     {
         // The layers of wrapping are kind of disgusting, but we need an open StreamReader to create a CsvReader
         // The CsvReader gives us access to CsvDataReader to stream from the table (to the SqlBulkCopy)
@@ -208,7 +205,7 @@ public class UploadCsvToDb
 
         // The above section is very fast because it doesn't actually do any parsing, so it doesn't make sense to report.
         await this.Report("Connecting...");
-        using SqlConnection connection = new (connectionString);
+        using SqlConnection connection = new (Config.GetConnectionString());
         await connection.OpenAsync();
 
         using SqlTransaction transaction = connection.BeginTransaction();
