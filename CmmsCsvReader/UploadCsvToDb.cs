@@ -137,47 +137,62 @@ public class UploadCsvToDb
     /// <returns>A Task representing that the model mappings have been updated.</returns>
     public async Task<UploadResult> ExecuteAsync(string? filename = null)
     {
-        string path = Config.InputLocation;
-        if (string.IsNullOrWhiteSpace(filename))
+        this.output.ClearLogs();
+        string? potentialFilePath = null;
+        string filePath = string.Empty;
+        string? validationError = null;
+
+        while (string.IsNullOrEmpty(filePath))
         {
-            await this.Report($"No file specified. Defaulting to config file input location ({path}).\n");
-        }
-        else
-        {
-            path = filename;
+            potentialFilePath = await this.input.GetFileAsync(new ("Please select the file(s) you wish to upload."), validationError);
+            if (potentialFilePath == null)
+            {
+                validationError = $"No file specified. Please try again.";
+            }
+            else if (!Path.Exists(potentialFilePath))
+            {
+                validationError = $"Path '{filename}' is not a valid directory or CSV file. Please try again.";
+            }
+            else
+            {
+                filePath = potentialFilePath;
+            }
         }
 
         // Path validation
         try
         {
-            if (Directory.Exists(path))
+            if (Directory.Exists(filePath))
             {
-                await this.Report($"Path '{filename}' is a directory, which is not supported by this uploader. Using Config default ({path}).\n", ReportLevel.WARNING);
+                await this.Report($"Path '{filename}' is a directory, which is not supported by this uploader. Using Config default ({filePath}).\n", ReportLevel.WARNING);
             }
-            else if (!File.Exists(path))
+            else if (!File.Exists(filePath))
             {
-                await this.Report($"Path '{filename}' could not be found. Using Config default ({path}).\n", ReportLevel.WARNING);
+                await this.Report($"Path '{filename}' could not be found. Using Config default ({filePath}).\n", ReportLevel.WARNING);
             }
-            else if (!Path.GetExtension(path).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+            else if (!Path.GetExtension(filePath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
             {
-                await this.Report($"The file you specified ({path}) is not a CSV. Please select a CSV file and try again.\n", ReportLevel.ERROR);
+                await this.Report($"The file you specified ({filePath}) is not a CSV. Please select a CSV file and try again.\n", ReportLevel.ERROR);
                 return UploadResult.ErroredOut;
             }
 
             await this.Report($"Date of last upload: {await GetLastUpdatedDate()}\n", ReportLevel.IMPORTANT);
-            bool confirmOverwrite = await this.input.GetConfirmAsync(new ($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {path}. Proceed?", ReportLevel.WARNING));
+            bool confirmOverwrite = await this.input.GetConfirmAsync(new ($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {filePath}. Proceed?", ReportLevel.WARNING));
 
             if (!confirmOverwrite)
             {
+                await this.output.ReportProgress(ProgressEvent.FileSkipped);
                 return UploadResult.Canceled; // default to cancel if user does not confirm explicitly
             }
 
-            await this.Upload(path);
+            await this.Upload(filePath);
+            await this.output.ReportProgress(ProgressEvent.UploadComplete);
             return UploadResult.Complete;
         }
         catch (Exception ex)
         {
             await this.Report($"Fatal error: {ex.Message}\n", ReportLevel.ERROR);
+            await this.output.ReportProgress(ProgressEvent.UploadComplete);
             return UploadResult.ErroredOut;
         }
     }
@@ -189,6 +204,9 @@ public class UploadCsvToDb
     /// <returns>A Task representing that the upload is complete.</returns>
     public async Task Upload(string filepath)
     {
+        await this.output.SetCurrentFile(Path.GetFileName(filepath));
+        await this.output.ReportProgress(ProgressEvent.FileStarted);
+
         // The layers of wrapping are kind of disgusting, but we need an open StreamReader to create a CsvReader
         // The CsvReader gives us access to CsvDataReader to stream from the table (to the SqlBulkCopy)
         // Finally, we can use our custom TruncatingDataReader to enforce the 8-character limit while streaming from the CsvDataReader
@@ -240,11 +258,13 @@ public class UploadCsvToDb
 
             transaction.Commit();
             await this.Report("Complete!\n", ReportLevel.SUCCESS);
+            await this.output.ReportProgress(ProgressEvent.FileCompleted);
         }
         catch (Exception ex)
         {
             transaction.Rollback();
             await this.Report($"Bulk Copy Error: {ex.Message}\n", ReportLevel.ERROR);
+            await this.output.ReportProgress(ProgressEvent.FileCompleted);
         }
     }
 

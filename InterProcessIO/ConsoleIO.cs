@@ -15,7 +15,7 @@ public class ConsoleInputProvider : IInputProvider
     /// <summary>
     /// <inheritdoc/> Uses standard console methods suitable for a CLI.
     /// </summary>
-    /// <param name="prompt"><inheritdoc/></param>
+    /// <param name="prompt"><inheritdoc path="/param[@name='prompt']"/></param>
     /// <param name="previousError">Unused in this implementation.</param>
     /// <returns>A Task containing the command line input.</returns>
     public async Task<string> GetInputAsync(Report prompt, string? previousError = null)
@@ -37,6 +37,30 @@ public class ConsoleInputProvider : IInputProvider
         Console.Write($"{prompt.ToAnsiString()} (y/n)");
         string response = (await this.GetInputAsync(new (string.Empty))).Trim().ToLower();
         return response == "y" || response == "yes";
+    }
+
+    /// <summary>
+    /// <inheritdoc/>
+    /// Since this is the console reporter, file input is text-based (no access to OS file selector).
+    /// </summary>
+    /// <param name="prompt"><inheritdoc path="/param[@name='prompt']"/></param>
+    /// <param name="previousError">Unused in this implementation.</param>
+    /// <returns><inheritdoc/></returns>
+    public async Task<string?> GetFileAsync(Report prompt, string? previousError = null)
+    {
+        string path = await this.GetInputAsync(prompt, previousError);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        path = path.Trim().Trim('"', '\u200E', '\u200F'); // match existing path cleaning in ExecuteAsync
+        if (!File.Exists(path))
+        {
+            return null; // caller's validation loop will re-prompt (but no way of seeing input path)
+        }
+
+        return Path.GetFileName(path);
     }
 }
 
@@ -142,5 +166,22 @@ public class ConsoleReporter : IOutputProvider
         sb.Append(divider.TrimEnd('\t'));
 
         await this.ReportAsync(new (sb.ToString()));
+    }
+
+    /// <summary>
+    /// Fulfills the requirement to implement <see cref="IOutputProvider.InitializeProgress"/>.
+    /// Does nothing, because <see cref="ConsoleReporter"/> does not track progress.
+    /// </summary>
+    /// <param name="totalFiles"><inheritdoc/></param>
+    public void InitializeProgress(int totalFiles)
+    {
+    }
+
+    /// <summary>
+    /// Fulfills the requirement to implement <see cref="IOutputProvider.ClearLogs"/>.
+    /// Does nothing, because <see cref="ConsoleReporter"/> does not hold logs internally.
+    /// </summary>
+    public void ClearLogs()
+    {
     }
 }
