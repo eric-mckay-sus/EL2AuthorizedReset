@@ -3,6 +3,7 @@
 @inherits EntityManagerBase<CmmsLine, CmmsLine>
 @inject IWebHostEnvironment Environment
 @attribute [Authorize(Roles = "Admin")]
+@implements IDisposable
 
 <PageTitle>Import CMMS Mappings</PageTitle>
 
@@ -31,6 +32,13 @@
                 <div class="status-header">Upload Progress</div>
                 <pre class="status-content">@_uploadStatus</pre>
             </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_validationPrompt))
+        {
+            <Alert Color="AlertColor.Warning" Class="mt-3">
+                @_validationPrompt
+            </Alert>
         }
     </div>
 </div>
@@ -69,12 +77,18 @@
     private string? _filePath;
     private bool _isDragging = false;
     private bool _isUploading = false;
+    private string? _validationPrompt;
     private bool _confirmationOpen => _selectedFile != null && !_isUploading;
 
     private void HandleDragEnter() => _isDragging = true;
     private void HandleDragOver() => _isDragging = true;
     private void HandleDragLeave() => _isDragging = false;
     private void HandleDrop() => _isDragging = false;
+
+    /// <summary>
+    /// Gets the path of the uploads folder for this session.
+    /// </summary>
+    protected static string UploadsFolderPath { get => Path.Combine(Path.GetTempPath(), "uploads", field); } = Guid.NewGuid().ToString();
 
     /// <summary>
     /// When this page loads, set up the connection string and get the last upload date
@@ -87,6 +101,32 @@
         CurrentSortColumn="CmmsNum";
         SortDir = "ascending";
         _lastUpload = await UploadCsvToDb.GetLastUpdatedDate();
+        InputProvider.OnInputRequested += this.HandleInputRequested;
+        Reporter.OnNotify += this.HandleReporterNotify;
+    }
+
+    private void HandleInputRequested(Report prompt, string? previousError)
+    {
+        _validationPrompt = string.IsNullOrWhiteSpace(previousError) ? prompt.message : $"{previousError}\n{prompt.message}";
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleReporterNotify()
+    {
+        if (Reporter.Progress != null)
+        {
+            _uploadStatus =
+                $"File: {Reporter.Progress.CurrentFileName}\n" +
+                $"Files Complete: {Reporter.Progress.FilesCompleted}/{Reporter.Progress.TotalFiles}";
+        }
+
+        if (Reporter.Logs.Count > 0)
+        {
+            string logLines = string.Join('\n', Reporter.Logs.Select(l => l.message.TrimEnd()));
+            _uploadStatus = string.IsNullOrWhiteSpace(_uploadStatus) ? logLines : $"{_uploadStatus}\n{logLines}";
+        }
+
+        InvokeAsync(StateHasChanged);
     }
 
     /// <summary>
@@ -97,17 +137,16 @@
     {
         _isUploading = true;
         _uploadStatus = "Uploading...";
+        _validationPrompt = null;
         try
         {
             // The file content is read into a stream
             if (_selectedFile != null)
             {
-                // Putting the upload in wwwroot works well from a file management standpoint, but will trigger dotnet watch's hot reload. dotnet run works fine.
-                var uploadsFolderPath = Path.Combine(Environment.WebRootPath, "uploads");
-                Directory.CreateDirectory(uploadsFolderPath); // Ensure directory exists
+                Directory.CreateDirectory(UploadsFolderPath); // Ensure directory exists
 
                 string trustedFileName = $"cmms_mappings_{DateTime.Now:yyyy-MM-dd}";
-                _filePath = Path.Combine(uploadsFolderPath, trustedFileName + Path.GetExtension(_selectedFile.Name));
+                _filePath = Path.Combine(UploadsFolderPath, trustedFileName + Path.GetExtension(_selectedFile.Name));
 
                 // Stream the file data from the element to the server
                 using (FileStream stream = new(_filePath, FileMode.Create))
@@ -115,17 +154,21 @@
                     await _selectedFile.OpenReadStream().CopyToAsync(stream);
                 }
 
-                _uploadStatus = ""; // Clear so the upload has a fresh slate
-                var blazorProgress = new Progress<string>(msg => {
-                    _uploadStatus += msg; // Get reported message
-                    StateHasChanged(); // Refresh UI to show reported message
-                });
-                UploadCsvToDb uploader = new ();
-                await uploader.Upload(_filePath);
+                Reporter.ClearLogs();
+                Reporter.InitializeProgress(1);
+                InputProvider.SetConfirmResult(true);
+                InputProvider.SetInputResult(_filePath);
+
+                UploadCsvToDb uploader = new(InputProvider, Reporter);
+                UploadResult result = await uploader.ExecuteAsync(_filePath);
                 await Task.Delay(100);
-                if (_uploadStatus.Contains("Connecting...Connected!\nUploading...Complete!")){
+                if (!Reporter.Logs.Any(l => l.level == ReportLevel.ERROR)){
                     ToastService.Notify(new(ToastType.Success, $"\n'{_selectedFile.Name  ?? "CSV"}' successfully uploaded."));
                     _lastUpload = await UploadCsvToDb.GetLastUpdatedDate();
+                }
+                else
+                {
+                    ToastService.Notify(new (ToastType.Danger, $"Upload failed."));
                 }
                 await LoadData();
             }
@@ -139,6 +182,28 @@
                 File.Delete(_filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
             _selectedFile = null;
             _isUploading = false;
+        }
+    }
+
+    /// <summary>
+    /// Signature and pattern in order to implement IDisposable.
+    /// Note: GC stands for garbage collector, which internally calls Dispose(false). By calling Dispose(true) here, we effectively circumvent that with the manual disposal.
+    /// </summary>
+    public void Dispose()
+    {
+        this.Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// When this component unloads, unsubscribe from the I/O provider events.
+    /// </summary>
+    /// <param name="disposing">Whether to actually dispose. This is a help for the garbage collector.</param>
+    public void Dispose(bool disposing){
+        if (disposing)
+        {
+            InputProvider.OnInputRequested -= this.HandleInputRequested;
+            Reporter.OnNotify -= this.HandleReporterNotify;
         }
     }
 }

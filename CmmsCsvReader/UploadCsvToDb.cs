@@ -141,10 +141,15 @@ public class UploadCsvToDb
         this.output.ClearLogs();
         string filePath = string.Empty;
         string? validationError = null;
+        string? potentialFilePath = filename;
 
         while (string.IsNullOrEmpty(filePath))
         {
-            string? potentialFilePath = filename ?? await this.input.GetFilepathAsync(new ("Please select the file(s) you wish to upload."), validationError);
+            if (filename == null)
+            {
+                potentialFilePath = await this.input.GetFilepathAsync(new ("Please select the file(s) you wish to upload."), validationError);
+            }
+
             if (potentialFilePath == null)
             {
                 validationError = "No file specified. Please try again.";
@@ -165,7 +170,11 @@ public class UploadCsvToDb
             {
                 filePath = potentialFilePath;
             }
+
+            filename = null;
         }
+
+        Console.WriteLine($"Path confirmed: {filePath}");
 
         try
         {
@@ -178,6 +187,7 @@ public class UploadCsvToDb
                 return UploadResult.Canceled; // default to cancel if user does not confirm explicitly
             }
 
+            Console.WriteLine("Got past confirmOverwrite...");
             await this.Upload(filePath);
             await this.output.ReportProgress(ProgressEvent.UploadComplete);
             return UploadResult.Complete;

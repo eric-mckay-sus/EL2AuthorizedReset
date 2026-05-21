@@ -41,6 +41,11 @@ public static class Program
         builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
             options.UseSqlServer(Config.GetConnectionString()));
 
+        builder.Services.AddTransient<BlazorInputProvider>();
+        builder.Services.AddTransient<IInputProvider>(sp => sp.GetRequiredService<BlazorInputProvider>());
+        builder.Services.AddTransient<BlazorReporter>();
+        builder.Services.AddTransient<IOutputProvider>(sp => sp.GetRequiredService<BlazorReporter>());
+
         // Authentication & Authorization
         builder.Services.AddScoped<IUserIdentityService, UserIdentityService>();
         builder.Services.AddMemoryCache();
