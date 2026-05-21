@@ -16,10 +16,16 @@ public class ConsoleInputProvider : IInputProvider
     /// <inheritdoc/> Uses standard console methods suitable for a CLI.
     /// </summary>
     /// <param name="prompt"><inheritdoc path="/param[@name='prompt']"/></param>
-    /// <param name="previousError">Unused in this implementation.</param>
+    /// <param name="previousError"><inheritdoc path="/param[@name='previousError']"/></param>
     /// <returns>A Task containing the command line input.</returns>
     public async Task<string> GetInputAsync(Report prompt, string? previousError = null)
     {
+        if (previousError != null)
+        {
+            Console.WriteLine(new Report(previousError, ReportLevel.ERROR).ToAnsiString());
+            Console.Write('\t');
+        }
+
         Console.WriteLine(prompt.ToAnsiString());
         Console.Write('\t');
         return await Task.Run(() => Console.ReadLine() ?? string.Empty);
@@ -44,9 +50,9 @@ public class ConsoleInputProvider : IInputProvider
     /// Since this is the console reporter, file input is text-based (no access to OS file selector).
     /// </summary>
     /// <param name="prompt"><inheritdoc path="/param[@name='prompt']"/></param>
-    /// <param name="previousError">Unused in this implementation.</param>
+    /// <param name="previousError"><inheritdoc path="/param[@name='previousError']"/></param>
     /// <returns><inheritdoc/></returns>
-    public async Task<string?> GetFileAsync(Report prompt, string? previousError = null)
+    public async Task<string?> GetFilepathAsync(Report prompt, string? previousError = null)
     {
         string path = await this.GetInputAsync(prompt, previousError);
         if (string.IsNullOrWhiteSpace(path))
@@ -54,13 +60,9 @@ public class ConsoleInputProvider : IInputProvider
             return null;
         }
 
-        path = path.Trim().Trim('"', '\u200E', '\u200F'); // match existing path cleaning in ExecuteAsync
-        if (!File.Exists(path))
-        {
-            return null; // caller's validation loop will re-prompt (but no way of seeing input path)
-        }
+        path = path.Trim().Trim('"', '\u200E', '\u200F'); // match terminal-native drag-drop support
 
-        return Path.GetFileName(path);
+        return Path.GetFullPath(path);
     }
 }
 

@@ -77,7 +77,7 @@ public class BlazorInputProvider : IInputProvider
     /// <param name="prompt"><inheritdoc path="/param[@name='prompt']"/></param>
     /// <param name="previousError"><inheritdoc path="/param[@name='previousError']"/></param>
     /// <returns><inheritdoc/></returns>
-    public Task<string?> GetFileAsync(Report prompt, string? previousError = null)
+    public Task<string?> GetFilepathAsync(Report prompt, string? previousError = null)
     {
         this.fileTcs = new TaskCompletionSource<string?>();
         this.OnFileRequested?.Invoke(prompt, previousError);

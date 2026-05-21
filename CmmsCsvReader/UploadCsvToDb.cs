@@ -132,26 +132,34 @@ public class UploadCsvToDb
 
     /// <summary>
     /// Designated entry point for outside projects. Parses the entire file for mappings and adds them all to the database.
+    /// If <paramref name="filename"/> is provided, it will be used, otherwise, the system will prompt for a filepath until a valid CSV is provided.
     /// </summary>
     /// <param name="filename">The file to parse (must be a CSV of the correct format).</param>
     /// <returns>A Task representing that the model mappings have been updated.</returns>
     public async Task<UploadResult> ExecuteAsync(string? filename = null)
     {
         this.output.ClearLogs();
-        string? potentialFilePath = null;
         string filePath = string.Empty;
         string? validationError = null;
 
         while (string.IsNullOrEmpty(filePath))
         {
-            potentialFilePath = await this.input.GetFileAsync(new ("Please select the file(s) you wish to upload."), validationError);
+            string? potentialFilePath = filename ?? await this.input.GetFilepathAsync(new ("Please select the file(s) you wish to upload."), validationError);
             if (potentialFilePath == null)
             {
-                validationError = $"No file specified. Please try again.";
+                validationError = "No file specified. Please try again.";
             }
-            else if (!Path.Exists(potentialFilePath))
+            else if (Directory.Exists(potentialFilePath))
             {
-                validationError = $"Path '{filename}' is not a valid directory or CSV file. Please try again.";
+                validationError = $"Path '{potentialFilePath}' is a directory, which is not supported by this uploader. Please select a CSV file instead.";
+            }
+            else if (!File.Exists(potentialFilePath))
+            {
+                validationError = $"Path '{potentialFilePath}' could not be found. Please verify the file location and try again.";
+            }
+            else if (!Path.GetExtension(potentialFilePath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                validationError = $"The file you specified ({potentialFilePath}) is not a CSV. Please select a CSV file and try again.";
             }
             else
             {
@@ -159,25 +167,10 @@ public class UploadCsvToDb
             }
         }
 
-        // Path validation
         try
         {
-            if (Directory.Exists(filePath))
-            {
-                await this.Report($"Path '{filename}' is a directory, which is not supported by this uploader. Using Config default ({filePath}).\n", ReportLevel.WARNING);
-            }
-            else if (!File.Exists(filePath))
-            {
-                await this.Report($"Path '{filename}' could not be found. Using Config default ({filePath}).\n", ReportLevel.WARNING);
-            }
-            else if (!Path.GetExtension(filePath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
-            {
-                await this.Report($"The file you specified ({filePath}) is not a CSV. Please select a CSV file and try again.\n", ReportLevel.ERROR);
-                return UploadResult.ErroredOut;
-            }
-
             await this.Report($"Date of last upload: {await GetLastUpdatedDate()}\n", ReportLevel.IMPORTANT);
-            bool confirmOverwrite = await this.input.GetConfirmAsync(new ($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {filePath}. Proceed?", ReportLevel.WARNING));
+            bool confirmOverwrite = await this.input.GetConfirmAsync(new ($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {Path.GetFileName(filePath)}. Proceed?", ReportLevel.WARNING));
 
             if (!confirmOverwrite)
             {

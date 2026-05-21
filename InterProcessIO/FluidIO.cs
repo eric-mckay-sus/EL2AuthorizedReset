@@ -166,12 +166,12 @@ public interface IInputProvider
     Task<bool> GetConfirmAsync(Report prompt);
 
     /// <summary>
-    /// Prompts for and awaits a file (not validated).
+    /// Queries the input source for a filepath (not validated).
     /// </summary>
-    /// <param name="prompt">The prompt requiring a file.</param>
+    /// <param name="prompt">The prompt requiring a filepath.</param>
     /// <param name="previousError">The previous error that prompted this input, if applicable.</param>
     /// <returns>A Task containing a nullable (in case of empty path) string representing the safe file path.</returns>
-    Task<string?> GetFileAsync(Report prompt, string? previousError = null);
+    Task<string?> GetFilepathAsync(Report prompt, string? previousError = null);
 }
 
 /// <summary>
