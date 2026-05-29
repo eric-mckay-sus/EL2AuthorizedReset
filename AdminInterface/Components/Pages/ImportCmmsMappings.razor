@@ -1,7 +1,6 @@
 @page "/import-cmms-mappings"
 @using CmmsCsvReader
 @inherits EntityManagerBase<CmmsLine, CmmsLine>
-@inject IWebHostEnvironment Environment
 @attribute [Authorize(Roles = "Admin")]
 @implements IDisposable
 
@@ -12,7 +11,7 @@
 <p>Upload a CSV of the Maximo export here to update the line names (locations) associated with each machine's CMMS number when a machine moves between lines</p>
 <p>Date of last upload: <strong>@_lastUpload</strong></p>
 <Alert Color="AlertColor.Warning" Class="d-inline-block"><Icon Name="IconName.ExclamationDiamond" />
-    If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>, all machines will have no connection to their old line)
+    If successful, this will overwrite the existing CMMS mappings (associates will retain their <em>lines</em>, all machines will lose their connection to their old line).
 </Alert>
 
 <div class="centered-container mb-3">
@@ -20,29 +19,32 @@
         <label for="fileInput" class="upload-button">
             <i class="bi bi-cloud-arrow-up" style="font-size: 26px"></i> Choose CSV File
         </label>
-        <InputFile id="fileInput" OnChange="e => _selectedFile = e.File" accept=".csv" class="hidden-input-overlay"
+        <InputFile id="fileInput" OnChange="HandleFileChanged" accept=".csv" class="hidden-input-overlay"
             @ondragenter="HandleDragEnter"
             @ondragleave="HandleDragLeave"
             @ondragover="HandleDragOver"
             @ondrop="HandleDrop" />
-
-        @if (!string.IsNullOrEmpty(_uploadStatus))
-        {
-            <div class="status-box mt-3">
-                <div class="status-header">Upload Progress</div>
-                <pre class="status-content">@_uploadStatus</pre>
-            </div>
-        }
-
-        @if (!string.IsNullOrWhiteSpace(_validationPrompt))
-        {
-            <Alert Color="AlertColor.Warning" Class="mt-3">
-                @_validationPrompt
-            </Alert>
-        }
     </div>
 </div>
 
+@* Shown when the selected file fails validation *@
+<div class="expandable-container">
+    <div class="expandable-wrapper @(_validationError != null ? "is-expanded" : "")">
+        <div class="expandable-content">
+            <Alert Color="AlertColor.Danger" Class="mt-3 animate-fade-in d-flex align-items-start justify-content-between">
+                <div>
+                    <strong><Icon Name="IconName.ExclamationTriangle" /> Invalid file:</strong>
+                    @_validationError
+                </div>
+                <button class="btn btn-link" @onclick="() => _validationError = null">
+                    <Icon Name="IconName.X"/>
+                </button>
+            </Alert>
+        </div>
+    </div>
+</div>
+
+@* Shown only when the file passes validation *@
 <div class="expandable-container">
     <div class="expandable-wrapper @(_confirmationOpen ? "is-expanded" : "")">
         <div class="expandable-content">
@@ -50,11 +52,12 @@
                 <p>
                     <strong>File Selected:</strong>
                     @(_selectedFile?.Name ?? "No file selected")
-                    (@((_selectedFile?.Size ?? 0) / 1024) KB)</p>
-                <Button Color="ButtonColor.Danger" @onclick="HandleFileSelection">
+                    (@((_selectedFile?.Size ?? 0) / 1024) KB)
+                </p>
+                <Button Color="ButtonColor.Danger" @onclick="HandleFileConfirmation">
                     <Icon Name="IconName.ExclamationTriangle" /> Confirm Overwrite
                 </Button>
-                <Button Color="ButtonColor.Secondary" @onclick="() => _selectedFile=null">Cancel</Button>
+                <Button Color="ButtonColor.Secondary" @onclick="CancelSelection">Cancel</Button>
             </Alert>
         </div>
     </div>
@@ -77,8 +80,8 @@
     private string? _filePath;
     private bool _isDragging = false;
     private bool _isUploading = false;
-    private string? _validationPrompt;
-    private bool _confirmationOpen => _selectedFile != null && !_isUploading;
+    private string? _validationError;
+    private bool _confirmationOpen => _selectedFile != null && _validationError == null && !_isUploading;
 
     private void HandleDragEnter() => _isDragging = true;
     private void HandleDragOver() => _isDragging = true;
@@ -88,7 +91,7 @@
     /// <summary>
     /// Gets the path of the uploads folder for this session.
     /// </summary>
-    protected static string UploadsFolderPath { get => Path.Combine(Path.GetTempPath(), "uploads", field); } = Guid.NewGuid().ToString();
+    protected string UploadsFolderPath { get; } = Path.Combine(Path.GetTempPath(), "uploads", Guid.NewGuid().ToString());
 
     /// <summary>
     /// When this page loads, set up the connection string and get the last upload date
@@ -98,89 +101,153 @@
     {
         // No risk of using null-forgiving operator because the app would have already crashed without a connection
         PageSize = 100;
-        CurrentSortColumn="CmmsNum";
+        CurrentSortColumn = "CmmsNum";
         SortDir = "ascending";
         _lastUpload = await UploadCsvToDb.GetLastUpdatedDate();
         InputProvider.OnInputRequested += this.HandleInputRequested;
-        Reporter.OnNotify += this.HandleReporterNotify;
+        InputProvider.OnFileRequested += this.HandleFileRequested;
+        InputProvider.OnConfirmationRequested += this.HandleConfirmationRequested;
     }
 
+    /// <summary>
+    /// Validates the selected file before showing the confirmation panel.
+    /// Sets _validationError and clears _selectedFile on failure so only valid files reach confirmation.
+    /// </summary>
+    private void HandleFileChanged(InputFileChangeEventArgs e)
+    {
+        _validationError = null;
+        _selectedFile = null;
+
+        IBrowserFile file = e.File;
+        string extension = Path.GetExtension(file.Name);
+
+        if (string.IsNullOrWhiteSpace(extension) || !extension.Equals(".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            _validationError = $"\"{file.Name}\" is not a CSV file. Please select a file with a .csv extension.";
+            return;
+        }
+
+        // Accept the file — confirmation panel will open
+        _selectedFile = file;
+    }
+
+    /// <summary>
+    /// Cancels selection by setting the file and error message to null.
+    /// </summary>
+    private void CancelSelection()
+    {
+        _selectedFile = null;
+        _validationError = null;
+    }
+
+    /// <summary>
+    /// When <see cref="EntityManagerBase{TWrite, TRead}.InputProvider"/> requests string input, show the prompt (input area shown page-side)
+    /// </summary>
+    /// <param name="prompt">The prompt requiring string input.</param>
+    /// <param name="previousError">The error from the previous prompt, if applicable.</param>
     private void HandleInputRequested(Report prompt, string? previousError)
     {
-        _validationPrompt = string.IsNullOrWhiteSpace(previousError) ? prompt.message : $"{previousError}\n{prompt.message}";
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void HandleReporterNotify()
-    {
-        if (Reporter.Progress != null)
-        {
-            _uploadStatus =
-                $"File: {Reporter.Progress.CurrentFileName}\n" +
-                $"Files Complete: {Reporter.Progress.FilesCompleted}/{Reporter.Progress.TotalFiles}";
-        }
-
-        if (Reporter.Logs.Count > 0)
-        {
-            string logLines = string.Join('\n', Reporter.Logs.Select(l => l.message.TrimEnd()));
-            _uploadStatus = string.IsNullOrWhiteSpace(_uploadStatus) ? logLines : $"{_uploadStatus}\n{logLines}";
-        }
-
+        _validationError = string.IsNullOrWhiteSpace(previousError) ? prompt.message : $"{previousError}\n{prompt.message}";
         InvokeAsync(StateHasChanged);
     }
 
     /// <summary>
-    /// When a file is confirmed, upload it to the server, then to the DB
+    /// When <see cref="EntityManagerBase{TWrite, TRead}.InputProvider"/> requests file input, show the prompt and error message (file passing handled separately)
     /// </summary>
-    /// <returns></returns>
-    private async Task HandleFileSelection()
+    /// <param name="prompt">The prompt requiring file input.</param>
+    /// <param name="previousError">The error message that caused this file prompt, if applicable.</param>
+    private void HandleFileRequested(Report prompt, string? previousError)
+    {
+        if (string.IsNullOrWhiteSpace(previousError))
+        {
+            _validationError = $"{previousError}\n{prompt.message}";
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// When <see cref="EntityManagerBase{TWrite, TRead}.InputProvider"/>, approve automatically when already uploading (page already confirmed).
+    /// </summary>
+    /// <param name="prompt">The prompt to be confirmed.</param>
+    private void HandleConfirmationRequested(Report prompt)
+    {
+        if (_isUploading)
+        {
+            InputProvider.SetConfirmResult(true);
+            return;
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Downloads <see cref="_selectedFile"/> at <see cref="UploadsFolderPath"/> and sets it as the file task completion source using <see cref="BlazorInputProvider.SetFileResult"/>
+    /// </summary>
+    /// <returns>A Task representing that the file was downloaded and passed off successfully.</returns>
+    private async Task SaveSelectedFileAndSignalAsync()
+    {
+        if (_selectedFile == null)
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(UploadsFolderPath);
+        string trustedFileName = $"cmms_mappings_{DateTime.Now:yyyy-MM-dd}";
+        _filePath = Path.Combine(UploadsFolderPath, trustedFileName + Path.GetExtension(_selectedFile.Name));
+
+        using FileStream stream = new(_filePath, FileMode.Create);
+        await _selectedFile.OpenReadStream().CopyToAsync(stream);
+
+        InputProvider.SetFileResult(_filePath);
+        _validationError = null;
+    }
+
+    /// <summary>
+    /// When a file is confirmed, download it to the server (from the browser), then upload to the DB
+    /// </summary>
+    /// <returns>A Task representing that the file was confirmed and an upload was attempted.</returns>
+    private async Task HandleFileConfirmation()
     {
         _isUploading = true;
         _uploadStatus = "Uploading...";
-        _validationPrompt = null;
+        _validationError = null;
+
         try
         {
-            // The file content is read into a stream
-            if (_selectedFile != null)
+            Reporter.ClearLogs();
+            Reporter.InitializeProgress(1);
+
+            await this.SaveSelectedFileAndSignalAsync(); // actually get the file (and pass to uploader via input provider)
+            UploadCsvToDb uploader = new(InputProvider, Reporter);
+            UploadResult result = await uploader.ExecuteAsync(_filePath);
+
+            if (result == UploadResult.Complete && !Reporter.Logs.Any(l => l.level == ReportLevel.ERROR))
             {
-                Directory.CreateDirectory(UploadsFolderPath); // Ensure directory exists
-
-                string trustedFileName = $"cmms_mappings_{DateTime.Now:yyyy-MM-dd}";
-                _filePath = Path.Combine(UploadsFolderPath, trustedFileName + Path.GetExtension(_selectedFile.Name));
-
-                // Stream the file data from the element to the server
-                using (FileStream stream = new(_filePath, FileMode.Create))
-                {
-                    await _selectedFile.OpenReadStream().CopyToAsync(stream);
-                }
-
-                Reporter.ClearLogs();
-                Reporter.InitializeProgress(1);
-                InputProvider.SetConfirmResult(true);
-                InputProvider.SetInputResult(_filePath);
-
-                UploadCsvToDb uploader = new(InputProvider, Reporter);
-                UploadResult result = await uploader.ExecuteAsync(_filePath);
-                await Task.Delay(100);
-                if (!Reporter.Logs.Any(l => l.level == ReportLevel.ERROR)){
-                    ToastService.Notify(new(ToastType.Success, $"\n'{_selectedFile.Name  ?? "CSV"}' successfully uploaded."));
-                    _lastUpload = await UploadCsvToDb.GetLastUpdatedDate();
-                }
-                else
-                {
-                    ToastService.Notify(new (ToastType.Danger, $"Upload failed."));
-                }
-                await LoadData();
+                ToastService.Notify(new(ToastType.Success, $"\n'{_selectedFile?.Name ?? "CSV"}' successfully uploaded."));
+                _lastUpload = await UploadCsvToDb.GetLastUpdatedDate();
             }
+            else if (result == UploadResult.Canceled)
+            {
+                ToastService.Notify(new(ToastType.Secondary, "Upload canceled."));
+            }
+            else
+            {
+                ToastService.Notify(new (ToastType.Danger, $"Upload failed."));
+            }
+            await LoadData();
         }
         catch (Exception ex)
         {
             _uploadStatus += $"\nUpload failed: {ex.Message}";
         }
-        finally{
-            if(!string.IsNullOrWhiteSpace(_filePath))
-                File.Delete(_filePath); // Clean up the uploads folder upon successful save to DB (the file is stored for less than a second)
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(_filePath) && File.Exists(_filePath))
+            {
+                File.Delete(_filePath);
+            }
+
             _selectedFile = null;
+            _filePath = null;
             _isUploading = false;
         }
     }
@@ -203,7 +270,8 @@
         if (disposing)
         {
             InputProvider.OnInputRequested -= this.HandleInputRequested;
-            Reporter.OnNotify -= this.HandleReporterNotify;
+            InputProvider.OnFileRequested -= this.HandleFileRequested;
+            InputProvider.OnConfirmationRequested -= this.HandleConfirmationRequested;
         }
     }
 }

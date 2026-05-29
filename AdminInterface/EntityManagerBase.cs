@@ -279,7 +279,6 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// </summary>
     protected virtual void InitializeFilters()
     {
-        return;
     }
 
     /// <summary>
