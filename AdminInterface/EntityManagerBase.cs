@@ -4,11 +4,13 @@
 
 namespace AdminInterface;
 
+using BlazorBootstrap;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
-using AdminInterface.Components.Common;
 using System.Linq.Dynamic.Core;
-using BlazorBootstrap;
+
+using AdminInterface.Components.Common;
+using InterProcessIO;
 
 /// <summary>
 /// Defines the shared behavior for an admin interface page.
@@ -22,6 +24,18 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     private int lastQueryHash;
 
     private Dictionary<string, IFilter> filterSnapshot = [];
+
+    /// <summary>
+    /// Gets or sets this upload page's input provider.
+    /// </summary>
+    [Inject]
+    public BlazorInputProvider InputProvider { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets this upload page's output provider.
+    /// </summary>
+    [Inject]
+    public BlazorReporter Reporter { get; set; } = default!;
 
     /// <summary>
     /// Gets or sets the event to detect when an item might not appear in the DataView.
@@ -265,7 +279,6 @@ public class EntityManagerBase<TWrite, TRead> : ComponentBase // Technically cou
     /// </summary>
     protected virtual void InitializeFilters()
     {
-        return;
     }
 
     /// <summary>

@@ -164,6 +164,14 @@ public interface IInputProvider
     /// <param name="prompt">The prompt requiring confirmation.</param>
     /// <returns>A Task containing a boolean representing whether the prompt was confirmed.</returns>
     Task<bool> GetConfirmAsync(Report prompt);
+
+    /// <summary>
+    /// Queries the input source for a filepath (not validated).
+    /// </summary>
+    /// <param name="prompt">The prompt requiring a filepath.</param>
+    /// <param name="previousError">The previous error that prompted this input, if applicable.</param>
+    /// <returns>A Task containing a nullable (in case of empty path) string representing the safe file path.</returns>
+    Task<string?> GetFilepathAsync(Report prompt, string? previousError = null);
 }
 
 /// <summary>
@@ -209,4 +217,15 @@ public interface IOutputProvider
     /// <param name="dt">The DataTable to display.</param>
     /// <returns>A Task representing the completion of the method.</returns>
     Task ShowPreview(DataTable dt);
+
+    /// <summary>
+    /// Initializes the progress tracker, if the implementation has one.
+    /// </summary>
+    /// <param name="totalFiles">The number of files with which to initialize the progress tracker.</param>
+    void InitializeProgress(int totalFiles);
+
+    /// <summary>
+    /// Empties the log container, if the implementation has one.
+    /// </summary>
+    void ClearLogs();
 }

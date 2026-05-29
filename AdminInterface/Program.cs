@@ -4,8 +4,8 @@
 
 namespace AdminInterface;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 using AdminInterface.Authentication;
 using AdminInterface.Components;
@@ -22,11 +22,29 @@ public static class Program
     /// <param name="args">Command-line arguments supplied by the host.</param>
     public static void Main(string[] args)
     {
+        // Pre-check environment variables
+        try
+        {
+            Config.GetConnectionString();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+            return;
+        }
+
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
         // Database Configuration
         builder.Services.AddDbContextFactory<AuthResetDbContext>(options =>
             options.UseSqlServer(Config.GetConnectionString()));
+
+        builder.Services.AddTransient<BlazorInputProvider>();
+        builder.Services.AddTransient<IInputProvider>(sp => sp.GetRequiredService<BlazorInputProvider>());
+        builder.Services.AddTransient<BlazorReporter>();
+        builder.Services.AddTransient<IOutputProvider>(sp => sp.GetRequiredService<BlazorReporter>());
 
         // Authentication & Authorization
         builder.Services.AddScoped<IUserIdentityService, UserIdentityService>();

@@ -5,7 +5,6 @@
 namespace CmmsCsvReader;
 
 using Microsoft.Data.SqlClient;
-using static Environment;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
@@ -104,63 +103,10 @@ public class UploadCsvToDb
     }
 
     /// <summary>
-    /// Designated entry point for outside projects. Parses the entire file for mappings and adds them all to the database.
-    /// </summary>
-    /// <param name="filename">The file to parse (must be a CSV of the correct format).</param>
-    /// <returns>A Task representing that the model mappings have been updated.</returns>
-    public async Task<UploadResult> ExecuteAsync(string? filename = null)
-    {
-        string path = Config.InputLocation;
-        if (string.IsNullOrWhiteSpace(filename))
-        {
-            await this.Report($"No file specified. Defaulting to config file input location ({path}).\n");
-        }
-        else
-        {
-            path = filename;
-        }
-
-        // Path validation
-        try
-        {
-            if (Directory.Exists(path))
-            {
-                await this.Report($"Path '{filename}' is a directory, which is not supported by this uploader. Using Config default ({path}).\n", ReportLevel.WARNING);
-            }
-            else if (!File.Exists(path))
-            {
-                await this.Report($"Path '{filename}' could not be found. Using Config default ({path}).\n", ReportLevel.WARNING);
-            }
-            else if (!Path.GetExtension(path).Equals(".csv", StringComparison.OrdinalIgnoreCase))
-            {
-                await this.Report($"The file you specified ({path}) is not a CSV. Please select a CSV file and try again.\n", ReportLevel.ERROR);
-                return UploadResult.ErroredOut;
-            }
-
-            await this.Report($"Date of last upload: {await GetLastUpdatedDate(Config.GetConnectionString())}\n", ReportLevel.IMPORTANT);
-            bool confirmOverwrite = await this.input.GetConfirmAsync(new ($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {path}. Proceed?", ReportLevel.WARNING));
-
-            if (!confirmOverwrite)
-            {
-                return UploadResult.Canceled; // default to cancel if user does not confirm explicitly
-            }
-
-            await this.Upload(path, Config.GetConnectionString());
-            return UploadResult.Complete;
-        }
-        catch (Exception ex)
-        {
-            await this.Report($"Fatal error: {ex.Message}\n", ReportLevel.ERROR);
-            return UploadResult.ErroredOut;
-        }
-    }
-
-    /// <summary>
     /// Gets the date this table was last updated (from the extended metadata).
     /// </summary>
-    /// <param name="connectionString">The connection string to use to check the metadata.</param>
     /// <returns>A Task holding the date that the CMMS-line mappings were last updated.</returns>
-    private static async Task<string> GetLastUpdatedDate(string connectionString)
+    public static async Task<string> GetLastUpdatedDate()
     {
         const string sql = @"
             SELECT CAST(value AS NVARCHAR(MAX)) AS Value
@@ -168,7 +114,7 @@ public class UploadCsvToDb
 
         try
         {
-            using SqlConnection connection = new (connectionString);
+            using SqlConnection connection = new (Config.GetConnectionString());
             using SqlCommand command = new (sql, connection);
 
             await connection.OpenAsync();
@@ -185,13 +131,85 @@ public class UploadCsvToDb
     }
 
     /// <summary>
+    /// Designated entry point for outside projects. Parses the entire file for mappings and adds them all to the database.
+    /// If <paramref name="filename"/> is provided, it will be used, otherwise, the system will prompt for a filepath until a valid CSV is provided.
+    /// </summary>
+    /// <param name="filename">The file to parse (must be a CSV of the correct format).</param>
+    /// <returns>A Task representing that the model mappings have been updated.</returns>
+    public async Task<UploadResult> ExecuteAsync(string? filename = null)
+    {
+        this.output.ClearLogs();
+        string filePath = string.Empty;
+        string? validationError = null;
+        string? potentialFilePath = filename;
+
+        while (string.IsNullOrEmpty(filePath))
+        {
+            if (filename == null)
+            {
+                potentialFilePath = await this.input.GetFilepathAsync(new ("Please select the file(s) you wish to upload."), validationError);
+            }
+
+            if (potentialFilePath == null)
+            {
+                validationError = "No file specified. Please try again.";
+            }
+            else if (Directory.Exists(potentialFilePath))
+            {
+                validationError = $"Path '{potentialFilePath}' is a directory, which is not supported by this uploader. Please select a CSV file instead.";
+            }
+            else if (!File.Exists(potentialFilePath))
+            {
+                validationError = $"Path '{potentialFilePath}' could not be found. Please verify the file location and try again.";
+            }
+            else if (!Path.GetExtension(potentialFilePath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                validationError = $"The file you specified ({potentialFilePath}) is not a CSV. Please select a CSV file and try again.";
+            }
+            else
+            {
+                filePath = potentialFilePath;
+            }
+
+            filename = null;
+        }
+
+        Console.WriteLine($"Path confirmed: {filePath}");
+
+        try
+        {
+            await this.Report($"Date of last upload: {await GetLastUpdatedDate()}\n", ReportLevel.IMPORTANT);
+            bool confirmOverwrite = await this.input.GetConfirmAsync(new ($"WARNING: If successful, this action will overwrite the current CMMS lookup database with the contents of {Path.GetFileName(filePath)}. Proceed?", ReportLevel.WARNING));
+
+            if (!confirmOverwrite)
+            {
+                await this.output.ReportProgress(ProgressEvent.FileSkipped);
+                return UploadResult.Canceled; // default to cancel if user does not confirm explicitly
+            }
+
+            Console.WriteLine("Got past confirmOverwrite...");
+            await this.Upload(filePath);
+            await this.output.ReportProgress(ProgressEvent.UploadComplete);
+            return UploadResult.Complete;
+        }
+        catch (Exception ex)
+        {
+            await this.Report($"Fatal error: {ex.Message}\n", ReportLevel.ERROR);
+            await this.output.ReportProgress(ProgressEvent.UploadComplete);
+            return UploadResult.ErroredOut;
+        }
+    }
+
+    /// <summary>
     /// Uploads the CSV file at filepath to the database.
     /// </summary>
     /// <param name="filepath">The path of the CSV to upload.</param>
-    /// <param name="connectionString">The DB connection string.</param>
     /// <returns>A Task representing that the upload is complete.</returns>
-    private async Task Upload(string filepath, string connectionString)
+    public async Task Upload(string filepath)
     {
+        await this.output.SetCurrentFile(Path.GetFileName(filepath));
+        await this.output.ReportProgress(ProgressEvent.FileStarted);
+
         // The layers of wrapping are kind of disgusting, but we need an open StreamReader to create a CsvReader
         // The CsvReader gives us access to CsvDataReader to stream from the table (to the SqlBulkCopy)
         // Finally, we can use our custom TruncatingDataReader to enforce the 8-character limit while streaming from the CsvDataReader
@@ -208,7 +226,7 @@ public class UploadCsvToDb
 
         // The above section is very fast because it doesn't actually do any parsing, so it doesn't make sense to report.
         await this.Report("Connecting...");
-        using SqlConnection connection = new (connectionString);
+        using SqlConnection connection = new (Config.GetConnectionString());
         await connection.OpenAsync();
 
         using SqlTransaction transaction = connection.BeginTransaction();
@@ -243,11 +261,13 @@ public class UploadCsvToDb
 
             transaction.Commit();
             await this.Report("Complete!\n", ReportLevel.SUCCESS);
+            await this.output.ReportProgress(ProgressEvent.FileCompleted);
         }
         catch (Exception ex)
         {
             transaction.Rollback();
             await this.Report($"Bulk Copy Error: {ex.Message}\n", ReportLevel.ERROR);
+            await this.output.ReportProgress(ProgressEvent.FileCompleted);
         }
     }
 
