@@ -6,37 +6,37 @@
 
 <div class="row overflow-hidden flex-nowrap">
     @* Split screen when expanded, otherwise fullscreen the lockout table *@
-    <div class="@(_isTargeting ? "col-7" : "col-12") transition-width">
-        <SearchLockouts Target="_target" HandleExpand="HandleExpand" OnItemChanged="HandleLockoutResetNotShown"/>
+    <div class="@(isTargeting ? "col-7" : "col-12") transition-width">
+        <SearchLockouts Target="target" HandleExpand="HandleExpand" OnItemChanged="HandleLockoutResetNotShown"/>
     </div>
-    <div class="@(_isTargeting ? "col-5" : "col-0") transition-width overflow-hidden"
-         style="@(_isTargeting ? "" : "display:none;")">
-            @if (_isTargeting) {
-                <TargetedResets target="_target" OnClose="HandleClose" />
+    <div class="@(isTargeting ? "col-5" : "col-0") transition-width overflow-hidden"
+         style="@(isTargeting ? "" : "display:none;")">
+            @if (isTargeting) {
+                <TargetedResets Target="target" OnClose="HandleClose" />
             }
     </div>
 </div>
 
 @code{
-    private LockoutReset? _target;
-    private bool _isTargeting = false;
+    private LockoutReset? target;
+    private bool isTargeting = false;
 
     private void HandleExpand(LockoutReset lockoutReset) {
-        if (lockoutReset.Equals(_target)){
+        if (lockoutReset.Equals(target)){
             HandleClose();
         } else {
-            _target = lockoutReset;
-            _isTargeting = true;
+            target = lockoutReset;
+            isTargeting = true;
         }
     }
     private void HandleClose(){
-        _target = null;
-        _isTargeting = false;
+        target = null;
+        isTargeting = false;
     }
 
     private void HandleLockoutResetNotShown(LockoutReset changedLockoutReset)
     {
-        if (_target != null && changedLockoutReset.Equals(_target))
+        if (target != null && changedLockoutReset.Equals(target))
         {
             HandleClose();
         }

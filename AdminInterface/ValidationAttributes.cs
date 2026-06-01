@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 /// <summary>
 /// Verifies that an associate's badge number is unique.
 /// </summary>
+[AttributeUsage(AttributeTargets.Property)]
 public class UniqueBadgeNumberAttribute : ValidationAttribute
 {
     /// <summary>
@@ -38,6 +39,7 @@ public class UniqueBadgeNumberAttribute : ValidationAttribute
 /// <summary>
 /// Verify that an associate's associate number is unique.
 /// </summary>
+[AttributeUsage(AttributeTargets.Property)]
 public class UniqueAssociateNumberAttribute : ValidationAttribute
 {
     /// <summary>
@@ -66,6 +68,7 @@ public class UniqueAssociateNumberAttribute : ValidationAttribute
 /// <summary>
 /// Verify that an associate exists in the associate database.
 /// </summary>
+[AttributeUsage(AttributeTargets.Property)]
 public class ValidateAssociateExistsAttribute : ValidationAttribute
 {
     /// <summary>
@@ -94,6 +97,7 @@ public class ValidateAssociateExistsAttribute : ValidationAttribute
 /// <summary>
 /// Verify that a line exists in the CMMS to line name database.
 /// </summary>
+[AttributeUsage(AttributeTargets.Property)]
 public class ValidateLineExistsAttribute : ValidationAttribute
 {
     /// <summary>
@@ -122,6 +126,7 @@ public class ValidateLineExistsAttribute : ValidationAttribute
 /// <summary>
 /// Verify that a target associate and line are not already linked.
 /// </summary>
+[AttributeUsage(AttributeTargets.Class)]
 public class ValidateLineAssignedToAssociateAttribute : ValidationAttribute
 {
     /// <summary>

@@ -5,38 +5,38 @@
 
 <div class="row overflow-hidden flex-nowrap">
     @* Split screen when expanded, otherwise fullscreen the associate table *@
-    <div class="@(_isTargeting ? "col-7" : "col-12") transition-width">
-        <ManageAssociates target="_target" HandleExpand="HandleExpand" OnItemChanged="HandleAssociateNotShown"/>
+    <div class="@(isTargeting ? "col-7" : "col-12") transition-width">
+        <ManageAssociates Target="target" HandleExpand="HandleExpand" OnItemChanged="HandleAssociateNotShown"/>
     </div>
-    <div class="@(_isTargeting ? "col-5" : "col-0") transition-width overflow-hidden"
-         style="@(_isTargeting ? "" : "display:none;")">
-            @if (_isTargeting) {
-                <ManageLines targetAssociate="_target" OnClose="HandleClose" />
+    <div class="@(isTargeting ? "col-5" : "col-0") transition-width overflow-hidden"
+         style="@(isTargeting ? "" : "display:none;")">
+            @if (isTargeting) {
+                <ManageLines TargetAssociate="target" OnClose="HandleClose" />
             }
     </div>
 </div>
 
 @code{
-    private Associate? _target;
-    private bool _isTargeting = false;
+    private Associate? target;
+    private bool isTargeting = false;
 
     private void HandleExpand(Associate associate) {
-        if (associate.Equals(_target)){
+        if (associate.Equals(target)){
             HandleClose();
         } else {
-            _target = associate;
-            _isTargeting = true;
+            target = associate;
+            isTargeting = true;
         }
     }
 
     private void HandleClose(){
-        _target = null;
-        _isTargeting = false;
+        target = null;
+        isTargeting = false;
     }
 
     private void HandleAssociateNotShown(Associate changedAssociate)
     {
-        if (_target != null && changedAssociate.Equals(_target))
+        if (target != null && changedAssociate.Equals(target))
         {
             HandleClose();
         }

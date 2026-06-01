@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using static Environment;
+using ENV = Environment;
 
 /// <summary>
 /// Provides a cached identity for the current application user.
@@ -42,7 +42,7 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
     public async Task<ClaimsPrincipal> GetUserPrincipalAsync()
     {
         // Get the username from the system (e.g. SUSU1057, SUSD5938)
-        string associateString = UserName;
+        string? associateString = ENV.UserName;
         string cacheKey = $"UserPrincipal_{associateString}";
 
         // If there's an identity stored in the cache, use that
@@ -51,48 +51,34 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
             return cachedPrincipal;
         }
 
-        // Check domain and name, verify that they match for SUS (not trivial to trick the environment variables)
+        associateString = ReadUsername(associateString);
 
-        // 99% chance it goes here
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (associateString == null)
         {
-            string[] domainAndUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\');
-            string domain = domainAndUser[0];
-            associateString = domainAndUser[1];
-            if (!(domain.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
-            {
-                return new (new ClaimsIdentity());
-            }
+            return new (new ClaimsIdentity());
         }
 
-        // but fall back to environment variables
-        else
-        {
-            if (!(UserDomainName.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
-            {
-                return new (new ClaimsIdentity());
-            }
-        }
-
-        associateString = associateString[4..]; // trim the first four characters (SUSU, but also works for SUSD if an IT person wanted to peek)
+        // Trim the first four characters (SUSU, but also works for SUSD if an IT person wanted to peek).
+        associateString = associateString[4..];
 
         ClaimsPrincipal principal;
 
-        // Extract associate number from remaining (hopefully all numeric) characters
+        // Extract associate number from remaining (hopefully all numeric) characters. Note this works for any length of associate number that fits in an int (guaranteed up to 9 digits)
         if (int.TryParse(associateString, out int associateNum))
         {
-            using AuthResetDbContext context = this.dbFactory.CreateDbContext();
+            using AuthResetDbContext context = await this.dbFactory.CreateDbContextAsync();
             Associate? associate = await context.Set<Associate>()
                 .FirstOrDefaultAsync(a => a.AssociateNum == associateNum);
 
+            // The associate was found in the DB
             if (associate != null)
             {
                 // Create identifier, adding admin role if applicable
-                var claims = new List<Claim>
-                {
+                List<Claim> claims =
+                [
                     new (ClaimTypes.Name, associate.Name ?? string.Empty),
                     new ("AssociateNum", associateNum.ToString()),
-                };
+                ];
 
                 if (associate.IsAdmin)
                 {
@@ -102,20 +88,53 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
                 ClaimsIdentity identity = new (claims, "AutoAuth");
                 principal = new (identity);
             }
+
+            // If the associate wasn't found in the DB, return anonymous
             else
             {
                 principal = new (new ClaimsIdentity());
             }
-
-        // If int.TryParse failed (prefix strip didn't get something that looked like associate number) or an associate with the parsed number wasn't found in the DB, return anonymous
         }
+
+        // If int.TryParse failed (prefix strip didn't get something that looked like associate number), return anonymous.
         else
         {
             principal = new (new ClaimsIdentity());
         }
 
-        this.cache.Set(cacheKey, principal, TimeSpan.FromMinutes(15));
-
+        this.cache.Set(cacheKey, principal, TimeSpan.FromMinutes(10));
         return principal;
+    }
+
+    /// <summary>
+    /// Validates a user based on the domain and username. If it's not a match for Stanley, return null.
+    /// </summary>
+    /// <param name="associateString">The username to validate.</param>
+    /// <returns>A string with the username (adapted to Windows, if applicable) if it matches Stanley credentials. Otherwise, null.</returns>
+    private static string? ReadUsername(string associateString)
+    {
+        // Check domain and name, verify that they match for SUS (ignore environment variable)
+        // This is not trivial to trick using the environment variables
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            string[] domainAndUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\');
+            string domain = domainAndUser[0];
+            associateString = domainAndUser[1];
+            if (!(domain.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+            {
+                return null;
+            }
+        }
+
+        // Fall back to environment variables if not on Windows
+        else
+        {
+            if (!(ENV.UserDomainName.Equals("STANLEYUS") && associateString.StartsWith("SUS")))
+            {
+                return null;
+            }
+        }
+
+        return associateString;
     }
 }
