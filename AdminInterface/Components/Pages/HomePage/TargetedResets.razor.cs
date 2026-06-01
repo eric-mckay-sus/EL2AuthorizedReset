@@ -31,8 +31,8 @@ public partial class TargetedResets
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        this.CurrentSortColumn = "IsAuthorized";
-        this.SortDir = "descending";
+        this.SortList.Add(new ("IsAuthorized", SortDir.Desc));
+        this.SortList.Add(new ("Timestamp", SortDir.Desc));
     }
 
     /// <summary>

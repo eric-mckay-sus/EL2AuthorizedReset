@@ -22,8 +22,8 @@ public partial class ViewLines
     /// </summary>
     protected override void OnInitialized()
     {
-        this.CurrentSortColumn = "IsActive";
-        this.SortDir = "ascending";
+        this.SortList.Add(new ("IsActive", SortDir.Asc));
+        this.SortList.Add(new ("CmmsNum", SortDir.Asc));
         base.OnInitialized();
     }
 

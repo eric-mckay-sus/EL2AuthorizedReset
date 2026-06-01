@@ -62,8 +62,7 @@ public partial class ManageLines
     /// </summary>
     protected override void OnInitialized()
     {
-        this.CurrentSortColumn = "Line";
-        this.SortDir = "ascending";
+        this.SortList.Add(new ("Line", SortDir.Asc));
         this.PageSize = 10;
     }
 

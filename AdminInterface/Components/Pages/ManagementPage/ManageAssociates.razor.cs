@@ -81,11 +81,7 @@ public partial class ManageAssociates
     /// <summary>
     /// When this component is initialized, set the default sort.
     /// </summary>
-    protected override void OnInitialized()
-    {
-        this.CurrentSortColumn = "AssociateNum";
-        this.SortDir = "ascending";
-    }
+    protected override void OnInitialized() => this.SortList.Add(new ("AssociateNum", SortDir.Asc));
 
     /// <summary>
     /// Applies the search bar contents as a query filter

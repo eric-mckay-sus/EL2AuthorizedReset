@@ -61,8 +61,7 @@ public partial class ImportCmmsMappings : IDisposable
     {
         // No risk of using null-forgiving operator because the app would have already crashed without a connection
         this.PageSize = 100;
-        this.CurrentSortColumn = "CmmsNum";
-        this.SortDir = "ascending";
+        this.SortList.Add(new ("CmmsNum", SortDir.Asc));
         this.lastUpload = await UploadCsvToDb.GetLastUpdatedDate();
         this.InputProvider.OnInputRequested += this.HandleInputRequested;
         this.InputProvider.OnFileRequested += this.HandleFileRequested;

@@ -138,8 +138,7 @@ public partial class SearchLockouts
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        this.CurrentSortColumn = "LockoutTime";
-        this.SortDir = "descending";
+        this.SortList.Add(new ("LockoutTime", SortDir.Desc));
     }
 
     /// <summary>
