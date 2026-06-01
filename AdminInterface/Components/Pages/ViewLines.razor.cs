@@ -4,65 +4,82 @@
 
 namespace AdminInterface.Components.Pages;
 
+/// <summary>
+/// Code-behind for the simple line status page.
+/// </summary>
 public partial class ViewLines
 {
-    private Filter<int?> FilterCmmsNum => GetFilter<int?>("cmmsNum");
-    private Filter<string?> FilterLineName => GetFilter<string?>("lineName");
-    private Filter<bool?> FilterStatus => GetFilter<bool?>("status");
+    private bool isCollapsed = false;
 
-    private bool _isCollapsed = false;
-    private void ToggleCollapse() => _isCollapsed = !_isCollapsed;
+    private Filter<int?> FilterCmmsNum => this.GetFilter<int?>("cmmsNum");
+
+    private Filter<string?> FilterLineName => this.GetFilter<string?>("lineName");
+
+    private Filter<bool?> FilterStatus => this.GetFilter<bool?>("status");
 
     /// <summary>
-    /// When the page loads, set the default sort and populate the filters
+    /// When the page loads, set the default sort and populate the filters.
     /// </summary>
     protected override void OnInitialized()
     {
-        CurrentSortColumn="IsActive";
-        SortDir = "ascending";
+        this.CurrentSortColumn = "IsActive";
+        this.SortDir = "ascending";
         base.OnInitialized();
     }
 
-    private async Task ExecuteAndCollapse(){
-        await LoadData(updateCounts:true);
-        ToggleCollapse();
-    }
-
     /// <summary>
-    /// Populate the search-by-machine filters
+    /// Populate the search-by-machine filters.
     /// </summary>
     protected override void InitializeFilters()
     {
-        Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
-        Filters["lineName"] = new Filter<string?>("lineName", null);
-        Filters["status"] = new Filter<bool?>("status", null);
+        this.Filters["cmmsNum"] = new Filter<int?>("cmmsNum", null);
+        this.Filters["lineName"] = new Filter<string?>("lineName", null);
+        this.Filters["status"] = new Filter<bool?>("status", null);
     }
 
     /// <summary>
-    /// Apply all filters with input in the filter panel
+    /// Apply all filters with input in the filter panel.
     /// </summary>
-    /// <param name="query">The query to which the filters should be applied</param>
-    /// <returns>The filtered query</returns>
+    /// <param name="query">The query to which the filters should be applied.</param>
+    /// <returns>The filtered query.</returns>
     protected override IQueryable<CmmsLine> ApplyFilters(IQueryable<CmmsLine> query)
     {
         // CMMS Number (Exact)
-        if (FilterCmmsNum.IsActive)
-            query = query.Where(x => x.CmmsNum == FilterCmmsNum.Value);
+        if (this.FilterCmmsNum.IsActive)
+        {
+            query = query.Where(x => x.CmmsNum == this.FilterCmmsNum.Value);
+        }
 
         // Status (Exact match from dropdown)
-        if (FilterStatus.IsActive)
-            query = query.Where(x => x.IsActive == FilterStatus.Value);
+        if (this.FilterStatus.IsActive)
+        {
+            query = query.Where(x => x.IsActive == this.FilterStatus.Value);
+        }
 
         // Line Name (Partial match)
-        if (FilterLineName.IsActive)
-            query = query.Where(x => x.LineName != null && x.LineName.Contains(FilterLineName.Value!));
+        if (this.FilterLineName.IsActive)
+        {
+            query = query.Where(x => x.LineName != null && x.LineName.Contains(this.FilterLineName.Value!));
+        }
 
         return query;
     }
 
-    private bool? ParseBool(string? value)
+    private static bool? ParseBool(string? value)
     {
-        if (bool.TryParse(value, out var result)) return result;
+        if (bool.TryParse(value, out var result))
+        {
+            return result;
+        }
+
         return null;
     }
+
+    private async Task ExecuteAndCollapse()
+    {
+        await this.LoadData(updateCounts: true);
+        this.ToggleCollapse();
+    }
+
+    private void ToggleCollapse() => this.isCollapsed = !this.isCollapsed;
 }

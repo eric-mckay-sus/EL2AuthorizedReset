@@ -46,10 +46,10 @@ public static class Program
         builder.Services.AddTransient<BlazorReporter>();
         builder.Services.AddTransient<IOutputProvider>(sp => sp.GetRequiredService<BlazorReporter>());
 
-        // Authentication & Authorization
         builder.Services.AddScoped<IUserIdentityService, UserIdentityService>();
         builder.Services.AddMemoryCache();
 
+        // Authentication & Authorization
         builder.Services.AddAuthentication("AutoAuth")
             .AddAutoAuthentication();
 

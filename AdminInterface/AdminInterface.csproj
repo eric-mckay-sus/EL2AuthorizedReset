@@ -18,8 +18,12 @@
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1" />
   </ItemGroup>
 
-  <!-- Only use StyleCop when in debug mode -->
+  <!-- Only use StyleCop/Sonar when in debug mode -->
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.27.0.140913">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <!-- Setting private assets ensures this dependency is ignored in production -->

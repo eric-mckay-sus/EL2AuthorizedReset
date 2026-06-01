@@ -46,15 +46,15 @@
 
     <div class="expandable-wrapper @(!IsFormVisible ? "is-expanded" : "")">
         <div class="expandable-content">
-             @if (target == null && HandleExpand.HasDelegate){
+             @if (Target == null && HandleExpand.HasDelegate){
                 <h6 class="mb-2">Click the three lines next to an associate to see their authorized lines</h6>
             }
             <div class="row">
                 <div class="col-6">
                     <EditForm Model="this" OnValidSubmit="() => LoadData()">
                         <div class="input-group mb-2">
-                            <InputText id="searchBar" @bind-Value="_searchText" @onblur="HandleBlur" class="form-control" placeholder="Search by associate name or associate/badge number" autocomplete="off" />
-                            @if (!string.IsNullOrEmpty(_searchText)) {
+                            <InputText id="searchBar" @bind-Value="searchText" @onblur="HandleBlur" class="form-control" placeholder="Search by associate name or associate/badge number" autocomplete="off" />
+                            @if (!string.IsNullOrEmpty(searchText)) {
                                 <span class="input-group-text clear-addon">
                                     <button type="button" class="btn-close" aria-label="Clear" @onclick="ClearSearchBar" style="font-size: 0.8rem;"></button>
                                 </span>
@@ -84,11 +84,11 @@
             TWrite="Associate"
             TRead="Associate"
             Base="this"
-            Target="target"
+            Target="Target"
             OnDelete="HandleDelete"
             OnExpand="HandleExpand" />
     } else {
-        <h3>No associates @(_searchingInt ? $"with associate/badge number \"{_searchText}\"" : $"with name containing \"{_searchText}\"")</h3>
+        <h3>No associates @(SearchingInt ? $"with associate/badge number \"{searchText}\"" : $"with name containing \"{searchText}\"")</h3>
     }
 }
 

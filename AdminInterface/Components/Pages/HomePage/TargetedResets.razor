@@ -1,8 +1,8 @@
 ﻿@inherits EntityManagerBase<Reset, Reset>
 
-@if (target != null){ @* For prerendering cases*@
+@if (Target != null){ @* For prerendering cases*@
     <div class="d-flex justify-content-between mb-3">
-        <h2>CMMS #<strong>@target.CmmsNum</strong> reset requests for lockout at @target.LockoutTime</h2>
+        <h2>CMMS #<strong>@Target.CmmsNum</strong> reset requests for lockout at @Target.LockoutTime</h2>
         @if (OnClose.HasDelegate){
             <button type="button" class="btn-close" title="Close reset history split screen" @onclick="OnClose"></button>
         }
@@ -23,7 +23,7 @@
         @if(DataView.Count == 0){
             <h5>No records matched your criteria.</h5>
         } else{
-            var authorizedEntry = DataView.FirstOrDefault(x => x.IsAuthorized == true); // Works bc we're sorting by authorization descending
+            var authorizedEntry = DataView.FirstOrDefault(x => x.IsAuthorized); // Works bc we're sorting by authorization descending
             <TablePresenter
                 TRead="Reset"
                 TWrite="Reset"

@@ -1,9 +1,9 @@
 @inherits EntityManagerBase<Lockout, LockoutReset>
 
 <div class="filter-panel mb-3 p-2 border rounded bg-light shadow-sm">
-    <FilterHeader activeFilterCount="CountActiveFilters()" pendingFilterCount="CountPendingFilters()" @bind-IsCollapsed="_isCollapsed" />
+    <FilterHeader activeFilterCount="CountActiveFilters()" pendingFilterCount="CountPendingFilters()" @bind-IsCollapsed="isCollapsed" />
 
-    <div class="filter-content @(_isCollapsed ? "" : "expanded")">
+    <div class="filter-content @(isCollapsed ? "" : "expanded")">
         <hr class="mt-0" />
         <div class="row g-3">
             <div class="col-2">
@@ -23,9 +23,9 @@
                 <div class="input-group">
                     <button class="btn btn-secondary"
                             type="button"
-                            @onclick="() => lockoutLevelGreaterThan = !lockoutLevelGreaterThan"
-                            title="@(lockoutLevelGreaterThan ? "Search higher lockout level" : "Search lower lockout level")">
-                        @if (lockoutLevelGreaterThan) {
+                            @onclick="() => LockoutLevelGreaterThan = !LockoutLevelGreaterThan"
+                            title="@(LockoutLevelGreaterThan ? "Search higher lockout level" : "Search lower lockout level")">
+                        @if (LockoutLevelGreaterThan) {
                             <span class="fw-bold">&ge;</span>
                         } else {
                             <span class="fw-bold">&le;</span>

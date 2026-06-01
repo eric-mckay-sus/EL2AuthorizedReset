@@ -4,9 +4,9 @@
 
 <PageTitle>Manage Lines</PageTitle>
 
-@if (targetAssociate != null){ @* For prerendering cases*@
+@if (TargetAssociate != null){ @* For prerendering cases*@
     <div class="d-flex justify-content-between mb-3">
-        <h2>Manage Lines for <strong>@targetAssociate.Name</strong></h2>
+        <h2>Manage Lines for <strong>@TargetAssociate.Name</strong></h2>
         @if (OnClose.HasDelegate){
             <button type="button" class="btn-close" title="Close line management split screen" @onclick="OnClose"></button>
         }
@@ -21,7 +21,7 @@
 
                         <div class="form-container">
                             <h5 class="form-title">
-                                @(isEditing ? $"Edit Authorization: {NewItem.Line}" : $"Authorize New Line for {targetAssociate.Name}")
+                                @(isEditing ? $"Edit Authorization: {NewItem.Line}" : $"Authorize New Line for {TargetAssociate.Name}")
                             </h5>
 
                             <div class="row">
@@ -94,7 +94,7 @@
 
                 <div class="d-flex justify-content-center mb-3">
                     <button class="btn btn-success" @onclick="ShowForm">
-                        <i class="bi bi-plus-lg"></i> Add New Line for @targetAssociate.Name
+                        <i class="bi bi-plus-lg"></i> Add New Line for @TargetAssociate.Name
                     </button>
                 </div>
             </div>
@@ -115,11 +115,11 @@
         } else {
             @if (string.IsNullOrEmpty(searchText)){
                 <div class="text-center">
-                    <h3>No lines authorized for @targetAssociate.Name</h3>
+                    <h3>No lines authorized for @TargetAssociate.Name</h3>
                 </div>
             } else {
                 <div class="text-center">
-                    <h3>No lines authorized for @targetAssociate.Name matching "@searchText"</h3>
+                    <h3>No lines authorized for @TargetAssociate.Name matching "@searchText"</h3>
                 </div>
             }
 
