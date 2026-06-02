@@ -14,8 +14,8 @@
 
   <ItemGroup>
     <PackageReference Include="Blazor.Bootstrap" Version="3.5.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.*" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.*" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.*" />
   </ItemGroup>
 
   <!-- Only use StyleCop/Sonar when in debug mode -->
