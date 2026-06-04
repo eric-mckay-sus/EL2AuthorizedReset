@@ -229,7 +229,7 @@ public class UploadCsvToDb
         using SqlConnection connection = new (Config.GetConnectionString());
         await connection.OpenAsync();
 
-        using SqlTransaction transaction = connection.BeginTransaction();
+        using SqlTransaction transaction = (SqlTransaction)await connection.BeginTransactionAsync();
         using SqlBulkCopy bulkCopy = new (connection, SqlBulkCopyOptions.CheckConstraints, transaction);
         bulkCopy.DestinationTableName = "EL2AuthorizedReset.dbo.CmmsToLineName";
         bulkCopy.ColumnMappings.Add("Cmms #", "cmmsNum");
@@ -242,7 +242,7 @@ public class UploadCsvToDb
             // Now parsing is complete, prepare to completely overwrite old DB state with new
             using (SqlCommand deleteCommand = new ("TRUNCATE TABLE EL2AuthorizedReset.dbo.CmmsToLineName", connection, transaction))
             {
-                deleteCommand.ExecuteNonQuery();
+                await deleteCommand.ExecuteNonQueryAsync();
             }
 
             await this.Report("Uploading...");
@@ -259,13 +259,13 @@ public class UploadCsvToDb
             command.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             await command.ExecuteNonQueryAsync();
 
-            transaction.Commit();
+            await transaction.CommitAsync();
             await this.Report("Complete!\n", ReportLevel.SUCCESS);
             await this.output.ReportProgress(ProgressEvent.FileCompleted);
         }
         catch (Exception ex)
         {
-            transaction.Rollback();
+            await transaction.RollbackAsync();
             await this.Report($"Bulk Copy Error: {ex.Message}\n", ReportLevel.ERROR);
             await this.output.ReportProgress(ProgressEvent.FileCompleted);
         }

@@ -1,8 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable @(isExpanded ? "sidebar-expanded" : "")">
     <div class="sidebar-header">
         <div class="header-content">
             <a class="stanley-icon" href=""></a>
@@ -11,14 +9,20 @@
     </div>
 
     <nav class="flex-column">
+        <div class="nav-item navbar-toggler">
+            <Button class="nav-link" @onclick="ToggleNavMenu" title="Navigation menu">
+                <Icon Name="IconName.List" Color="IconColor.White" Class="toggler-icon" />
+                <label>Collapse Navbar</label>
+            </Button>
+        </div>
         <div class="nav-item">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CollapseNavMenu">
                 <Icon Name="IconName.Clock" />
                 <label>Historical Records</label>
             </NavLink>
         </div>
         <div class="nav-item">
-            <NavLink class="nav-link" href="view-lines">
+            <NavLink class="nav-link" href="view-lines" Match="NavLinkMatch.All" @onclick="CollapseNavMenu">
                 <Icon Name="IconName.FilterSquare" />
                 <label>View Line Status</label>
             </NavLink>
@@ -27,14 +31,14 @@
         <AuthorizeView Roles="Manager">
             <Authorized>
                 <div class="nav-item">
-                    <NavLink class="nav-link" href="manage">
+                    <NavLink class="nav-link" href="manage" Match="NavLinkMatch.All" @onclick="CollapseNavMenu">
                         <Icon Name="IconName.PeopleFill" />
                         <label>Manage Associates & <br> Lines</label>
                     </NavLink>
                 </div>
 
                 <div class="nav-item">
-                    <NavLink class="nav-link" href="import-cmms-mappings">
+                    <NavLink class="nav-link" href="import-cmms-mappings" Match="NavLinkMatch.All" @onclick="CollapseNavMenu">
                         <Icon Name="IconName.CloudArrowUpFill" />
                         <label>Update CMMS</label>
                     </NavLink>
@@ -43,3 +47,26 @@
         </AuthorizeView>
     </nav>
 </div>
+
+@code {
+    private bool isExpanded = false;
+
+    /// <summary>
+    /// Gets or sets the action to perform elsewhere when toggling
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> OnToggle { get; set; }
+
+    private async Task ToggleNavMenu()
+    {
+        isExpanded = !isExpanded;
+        await OnToggle.InvokeAsync(isExpanded);
+    }
+
+    private async Task CollapseNavMenu()
+    {
+        // Useful for mobile: close the menu automatically after clicking a link
+        isExpanded = false;
+        await OnToggle.InvokeAsync(isExpanded);
+    }
+}

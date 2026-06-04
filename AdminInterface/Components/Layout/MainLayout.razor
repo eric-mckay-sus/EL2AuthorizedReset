@@ -1,12 +1,12 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
+    <div class="sidebar @(sidebarExpanded ? "sidebar-expanded" : "")">
+        <NavMenu OnToggle="OnSidebarToggle" />
     </div>
 
     <main>
-        <article class="content px-4">
+        <article class="content px-3">
             @Body
         </article>
     </main>
@@ -19,3 +19,12 @@
 </div>
 
 <Toasts Placement="ToastsPlacement.BottomRight" AutoHide="true" Delay="4000" />
+
+@code {
+    private bool sidebarExpanded = false;
+
+    private void OnSidebarToggle(bool isExpanded)
+    {
+        sidebarExpanded = isExpanded;
+    }
+}
