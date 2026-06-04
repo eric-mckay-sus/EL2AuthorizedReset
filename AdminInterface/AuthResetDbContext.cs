@@ -84,11 +84,11 @@ public class Associate
     public string? Name { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether this associate has admin privileges.
+    /// Gets or sets a value indicating whether this associate has privileges to create, edit, and delete associates and their reset permissions.
     /// </summary>
-    [Column("isAdmin")]
+    [Column("isManager")]
     [NotDisplayed]
-    public bool IsAdmin { get; set; }
+    public bool IsManager { get; set; }
 
     /// <summary>
     /// <see cref="Associate"/> objects are equal if they share the same badge number (by PK definition).

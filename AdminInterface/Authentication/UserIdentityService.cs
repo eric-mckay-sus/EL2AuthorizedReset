@@ -73,16 +73,16 @@ public class UserIdentityService(IDbContextFactory<AuthResetDbContext> dbFactory
             // The associate was found in the DB
             if (associate != null)
             {
-                // Create identifier, adding admin role if applicable
+                // Create identifier, adding manager role if applicable
                 List<Claim> claims =
                 [
                     new (ClaimTypes.Name, associate.Name ?? string.Empty),
                     new ("AssociateNum", associateNum.ToString()),
                 ];
 
-                if (associate.IsAdmin)
+                if (associate.IsManager)
                 {
-                    claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+                    claims.Add(new Claim(ClaimTypes.Role, "Manager"));
                 }
 
                 ClaimsIdentity identity = new (claims, "AutoAuth");
