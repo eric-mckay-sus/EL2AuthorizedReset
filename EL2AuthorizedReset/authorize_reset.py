@@ -15,13 +15,13 @@ class ResetAttempt:
     associate_name: str | None = None
     line_name: str | None = None
     is_authorized: bool = False
-    
+
 def main():
     """Entry point for the authorization class"""
     if(len(sys.argv) < 3):
         print("Usage: python AuthorizeReset [badge number] [CMMS number]")
         return
-    
+
     try:
         badge_num = int(sys.argv[1])
         cmms_num = int(sys.argv[2])
@@ -35,13 +35,13 @@ def main():
         f"DATABASE={os.getenv('DB_NAME')};"
         f"UID={os.getenv('DB_USER')};"
         f"PWD={os.getenv('DB_PASS')};"
-        "TrustServerCertificate=yes;" #TODO insecure, eventually require certificate verification
+        "TrustServerCertificate=yes;"
     )
 
     try:
         with pyodbc.connect(conn_str) as conn:
             attempt = authorize(badge_num, cmms_num, conn)
-            
+
             if attempt:
                 log_reset_attempt(attempt, conn)
                 print(f"Authorized: {attempt.is_authorized}")
@@ -59,7 +59,7 @@ def authorize(badge_num: int, cmms_num: int, conn) -> ResetAttempt:
         badgeNum (int): The badge number read from the badge reader
         cmmsNum (int): The machine's CMMS number
         conn (Connection): The open SQL connection
-    
+
     Returns:
         A ResetAttempt dataclass containing associate name, number, CMMS, line name, and whether the request was authorized
     """
@@ -107,10 +107,10 @@ def log_reset_attempt(attempt: ResetAttempt, conn):
         # Get the parameters for the SQL statement from the DTO
         # pyodbc can map Python None to SQL NULL, unlike C# SqlDataReader
         cursor.execute(sql, (
-            attempt.associate_num, 
-            attempt.associate_name, 
-            attempt.cmms_num, 
-            attempt.line_name, 
+            attempt.associate_num,
+            attempt.associate_name,
+            attempt.cmms_num,
+            attempt.line_name,
             attempt.is_authorized
         ))
         conn.commit()

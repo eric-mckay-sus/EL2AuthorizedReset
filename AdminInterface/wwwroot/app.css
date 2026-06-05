@@ -266,7 +266,6 @@ h1:focus {
     border-radius: 25px;
     padding: 2vh;
     margin-bottom: 5px;
-    justify-content: center;
     text-align: center;
     width: 140vh;
     height: 20vh;
@@ -358,13 +357,6 @@ h1:focus {
     background-color: white !important;
     border-left: none !important;
     padding-right: 15px;
-}
-
-.table-container.stale {
-    opacity: 0.5;
-    filter: grayscale(50%);
-    transition: all 0.5s ease-in-out;
-    pointer-events: none;
 }
 
 .error-page-wrapper {
