@@ -12,7 +12,7 @@ using System.Data;
 /// to the provided maximum length. The underlying reader is streamed, so
 /// no intermediate table is built.
 /// </summary>
-internal sealed class TruncatingDataReader : IDataReader, IDisposable
+internal sealed class TruncatingDataReader : IDataReader
 {
     /// <summary>
     /// The IDataReader implementation for which this is a wrapper.

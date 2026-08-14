@@ -129,6 +129,21 @@ public partial class UniversalTable<T>
     /// </summary>
     private int EndRecord => Math.Min(this.CurrentPage * this.PageSize, this.TotalCount);
 
+    private void ToggleAttentionItem(T item)
+    {
+        // Turn off attention style if on
+        if (this.attentionItem?.Equals(item) == true)
+        {
+            this.attentionItem = default;
+        }
+
+        // Turn on attention style if off (automatically revokes from current if one exists)
+        else
+        {
+            this.attentionItem = item;
+        }
+    }
+
     private string GetRowClass(T item)
     {
         if (item.Equals(default))

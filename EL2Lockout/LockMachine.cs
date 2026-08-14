@@ -5,12 +5,13 @@
 namespace EL2Lockout;
 
 using Microsoft.Data.SqlClient;
-using static Environment;
+
+using InterProcessIO;
 
 /// <summary>
 /// Log a lockout with required auth level using CMMS number and reason.
 /// </summary>
-public class LockMachine
+public static class LockMachine
 {
     /// <summary>
     /// Entry point for the lockout class. Validates arguments, connects to database, then delegates to <see cref="LogLockout"/> for documenting lockout.
@@ -43,22 +44,7 @@ public class LockMachine
 
         string reason = args[1];
 
-        string? server = GetEnvironmentVariable("DB_SERVER"), user = GetEnvironmentVariable("DB_USER"), password = GetEnvironmentVariable("DB_PASS"), name = GetEnvironmentVariable("DB_NAME");
-
-        if (string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name))
-        {
-            ErrorOut("One or more environment variables for database connection are missing. Please reload your terminal (or its context) and try again.");
-        }
-
-        var builder = new SqlConnectionStringBuilder
-        {
-            DataSource = server,
-            UserID = user,
-            Password = password,
-            InitialCatalog = name,
-            TrustServerCertificate = true, // TODO insecure, eventually require certificate verification
-        };
-        using SqlConnection conn = new (builder.ConnectionString);
+        using SqlConnection conn = new (Config.GetConnectionString());
         conn.Open();
         LogLockout(cmmsNum, reason, lockoutLevel, conn);
         Console.WriteLine("Lockout documented.");
@@ -73,7 +59,7 @@ public class LockMachine
         Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine(toPrint);
         Console.ResetColor();
-        Exit(-1);
+        Environment.Exit(-1);
     }
 
     /// <summary>

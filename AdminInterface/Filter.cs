@@ -4,6 +4,8 @@
 
 namespace AdminInterface;
 
+using System.Linq.Expressions;
+
 /// <summary>
 /// Container for the value and polarity of a filter.
 /// </summary>
@@ -118,4 +120,52 @@ public interface IFilter
     /// Resets this filter to its default state.
     /// </summary>
     void Reset();
+}
+
+/// <summary>
+/// Contains fluent extension methods to simplify implementations of <see cref="EntityManagerBase{TWrite, TRead}.ApplyFilters"/>.
+/// </summary>
+public static class QueryFilterExtensions
+{
+    /// <summary>
+    /// Filters the input <paramref name="query"/> by <paramref name="predicate"/> if the input <paramref name="filter"/> is active.
+    /// </summary>
+    /// <typeparam name="T">The type of the contents of the <paramref name="query"/>.</typeparam>
+    /// <typeparam name="TVal">The type of the contents of the <paramref name="filter"/>.</typeparam>
+    /// <param name="query">The IQueryable instance to which the filter should be applied.</param>
+    /// <param name="filter">The filter object being applied (contains activity status).</param>
+    /// <param name="predicate">The actual predicate applied as a filter condition.</param>
+    /// <returns>A new IQueryable instance representing the contents of <paramref name="query"/> filtered by <paramref name="predicate"/>.</returns>
+    public static IQueryable<T> ApplyFilterIfActive<T, TVal>(
+        this IQueryable<T> query,
+        Filter<TVal?> filter,
+        Expression<Func<T, bool>> predicate)
+    => filter.IsActive ? query.Where(predicate) : query;
+
+    /// <summary>
+    /// Applies the lockout level filter to the input <paramref name="query"/>.
+    /// </summary>
+    /// <param name="query">The IQueryable instance to which the filter should be applied.</param>
+    /// <param name="filter">The filter object being applied (contains activity status).</param>
+    /// <param name="greaterThan">Whether to use a predicate filtering by values greater than the filter contents (or less than).</param>
+    /// <returns>A new IQueryable instance representing the contents of <paramref name="query"/> filtered by lockout level.</returns>
+    public static IQueryable<LockoutReset> ApplyLockoutLevelFilterIfActive(
+    this IQueryable<LockoutReset> query,
+    Filter<int?> filter,
+    bool greaterThan)
+    {
+        if (!filter.IsActive)
+        {
+            return query;
+        }
+
+        if (greaterThan)
+        {
+            return query.Where(x => x.LockoutLevel >= filter.Value);
+        }
+        else
+        {
+            return query.Where(x => x.LockoutLevel <= filter.Value);
+        }
+    }
 }

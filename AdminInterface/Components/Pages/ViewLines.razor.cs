@@ -43,31 +43,15 @@ public partial class ViewLines
     /// <param name="query">The query to which the filters should be applied.</param>
     /// <returns>The filtered query.</returns>
     protected override IQueryable<CmmsLine> ApplyFilters(IQueryable<CmmsLine> query)
-    {
-        // CMMS Number (Exact)
-        if (this.FilterCmmsNum.IsActive)
-        {
-            query = query.Where(x => x.CmmsNum == this.FilterCmmsNum.Value);
-        }
-
-        // Status (Exact match from dropdown)
-        if (this.FilterStatus.IsActive)
-        {
-            query = query.Where(x => x.IsActive == this.FilterStatus.Value);
-        }
-
-        // Line Name (Partial match)
-        if (this.FilterLineName.IsActive)
-        {
-            query = query.Where(x => x.LineName != null && x.LineName.Contains(this.FilterLineName.Value!));
-        }
-
-        return query;
-    }
+    =>
+        query
+            .ApplyFilterIfActive(this.FilterCmmsNum, x => x.CmmsNum == this.FilterCmmsNum.Value)
+            .ApplyFilterIfActive(this.FilterStatus, x => x.IsActive == this.FilterStatus.Value)
+            .ApplyFilterIfActive(this.FilterLineName, x => x.LineName != null && x.LineName.Contains(this.FilterLineName.Value!));
 
     private static bool? ParseBool(string? value)
     {
-        if (bool.TryParse(value, out var result))
+        if (bool.TryParse(value, out bool result))
         {
             return result;
         }

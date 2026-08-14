@@ -9,7 +9,7 @@
             <div class="text-muted me-3">Showing @StartRecord to @EndRecord of @TotalCount</div>
             @* Page Size Dropdown *@
             <div class="d-flex align-items-center me-3">
-                <span class="text-muted me-2">Rows:</span>
+                <span class="form-label mb-0 me-1">Rows:</span>
                 <select class="form-select form-select-sm" style="width:auto"
                         @onchange="async (e) => await OnPageSizeChange.InvokeAsync(int.TryParse(e.Value?.ToString(), out int i) ? i : 25)">
                     <option value="10" selected="@(PageSize == 10)">10</option>
@@ -53,12 +53,12 @@
                     @foreach (var prop in cachedProps)
                     {
                         var attribute = prop.GetCustomAttribute<ColumnAttribute>();
-                        var displayName = attribute?.Name ?? prop.Name;
+                        string displayName = attribute?.Name ?? prop.Name;
                         <th @onclick="() => OnSort.InvokeAsync(prop.Name)"
-                        class="col-@prop.Name"
-                        style=@(OnSort.HasDelegate ? "cursor:pointer" : "cursor:auto")
-                        title=@(OnSort.HasDelegate ? $"Toggle sort for {displayName}" : "")>
-                            @displayName @SortIcon(prop.Name)
+                            class="col-@prop.Name"
+                            style=@(OnSort.HasDelegate ? "cursor:pointer" : "cursor:auto")
+                            title=@(OnSort.HasDelegate ? $"Toggle sort for {displayName}" : "")>
+                                @displayName @SortIcon(prop.Name)
                         </th>
                     }
                      @if (OnDelete.HasDelegate || OnExpand.HasDelegate){
@@ -69,7 +69,7 @@
             <tbody>
                 <Virtualize TItem="T" Items="@(Items?.ToList())" Context="item" OverscanCount="8" ItemSize="41">
                     <tr @key="item"
-                        @onclick="() => attentionItem=attentionItem?.Equals(item) == true ? default : item"
+                        @onclick="() => ToggleAttentionItem(item)"
                         class="@GetRowClass(item)">
                         @foreach (var prop in cachedProps)
                         {

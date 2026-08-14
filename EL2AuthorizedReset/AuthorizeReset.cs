@@ -5,7 +5,8 @@
 namespace EL2AuthorizedReset;
 
 using Microsoft.Data.SqlClient;
-using static Environment;
+
+using InterProcessIO;
 
 /// <summary>
 /// A DTO containing the information to log for a reset attempt
@@ -21,7 +22,7 @@ record ResetAttempt(
 /// <summary>
 /// Authorize and log a reset based on the permissions stored in the DB.
 /// </summary>
-public class AuthorizeReset
+public static class AuthorizeReset
 {
     /// <summary>
     /// Entry point for the authorization class. Validates arguments, connects to database, then delegates to <see cref="Authorize"/> and <see cref="LogResetAttempt"/> for documenting lockout.
@@ -41,23 +42,7 @@ public class AuthorizeReset
             return;
         }
 
-        string? server = GetEnvironmentVariable("DB_SERVER"), user = GetEnvironmentVariable("DB_USER"), password = GetEnvironmentVariable("DB_PASS"), name = GetEnvironmentVariable("DB_NAME");
-
-        if (string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name))
-        {
-            PrintInRed("One or more environment variables for database connection are missing. Please reload your terminal (or its context) and try again.");
-            return;
-        }
-
-        var builder = new SqlConnectionStringBuilder
-        {
-            DataSource = server,
-            UserID = user,
-            Password = password,
-            InitialCatalog = name,
-            TrustServerCertificate = true, // TODO insecure, eventually require certificate verification
-        };
-        using SqlConnection conn = new (builder.ConnectionString);
+        using SqlConnection conn = new (Config.GetConnectionString());
         conn.Open();
         ResetAttempt? attempt = Authorize(badgeNum, cmmsNum, conn);
         if (attempt.associateNum == null) // Indicates that the badge/CMMS was not found. Indicate this, but log it anyway

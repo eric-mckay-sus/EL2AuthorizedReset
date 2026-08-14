@@ -46,7 +46,8 @@
 
     <div class="expandable-wrapper @(!IsFormVisible ? "is-expanded" : "")">
         <div class="expandable-content">
-             @if (Target == null && HandleExpand.HasDelegate){
+            @if (Target == null && HandleExpand.HasDelegate)
+            {
                 <h6 class="mb-2">Click the three lines next to an associate to see their authorized lines</h6>
             }
             <div class="row">
