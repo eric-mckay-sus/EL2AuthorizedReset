@@ -59,7 +59,6 @@ public partial class ImportCmmsMappings : IDisposable
     /// <returns>A Task representing that the page has initialized.</returns>
     protected override async Task OnInitializedAsync()
     {
-        // No risk of using null-forgiving operator because the app would have already crashed without a connection
         this.PageSize = 100;
         this.SortList.Add(new ("CmmsNum", SortDir.Asc));
         this.lastUpload = await UploadCsvToDb.GetLastUpdatedDate();

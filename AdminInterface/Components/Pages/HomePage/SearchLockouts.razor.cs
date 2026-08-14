@@ -6,6 +6,8 @@ namespace AdminInterface.Components.Pages.HomePage;
 
 using Microsoft.AspNetCore.Components;
 
+using AdminInterface;
+
 /// <summary>
 /// The code-behind for the lockout search sub-page.
 /// </summary>
@@ -164,75 +166,18 @@ public partial class SearchLockouts
     /// </summary>
     /// <param name="query">The query to which the filters should be applied.</param>
     /// <returns>The filtered query.</returns>
-    protected override IQueryable<LockoutReset> ApplyFilters(IQueryable<LockoutReset> query)
-    {
-        // CMMS Number (Exact)
-        if (this.FilterCmmsNum.IsActive)
-        {
-            query = query.Where(x => x.CmmsNum == this.FilterCmmsNum.Value);
-        }
-
-        // Status (Exact match from dropdown)
-        if (this.FilterStatus.IsActive && !string.IsNullOrEmpty(this.FilterStatus.Value))
-        {
-            query = query.Where(x => x.Status == this.FilterStatus.Value);
-        }
-
-        // Reason (Partial match)
-        if (this.FilterReason.IsActive)
-        {
-            query = query.Where(x => x.Reason != null && x.Reason.Contains(this.FilterReason.Value!));
-        }
-
-        // Lockout Level (< or >)
-        if (this.FilterLockoutLevel.IsActive)
-        {
-            if (this.LockoutLevelGreaterThan)
-            {
-                query = query.Where(x => x.LockoutLevel >= this.FilterLockoutLevel.Value);
-            }
-            else
-            {
-                query = query.Where(x => x.LockoutLevel <= this.FilterLockoutLevel.Value);
-            }
-        }
-
-        // Line Name (Partial match)
-        if (this.FilterLineName.IsActive)
-        {
-            query = query.Where(x => x.LineName != null && x.LineName.Contains(this.FilterLineName.Value!));
-        }
-
-        // Resetter Name (Partial match)
-        if (this.FilterResetter.IsActive)
-        {
-            query = query.Where(x => x.ResetBy != null && x.ResetBy.Contains(this.FilterResetter.Value!));
-        }
-
-        // Lockout Time Range
-        if (this.FilterLockAfter.IsActive)
-        {
-            query = query.Where(x => x.LockoutTime >= this.FilterLockAfter.Value);
-        }
-
-        if (this.FilterLockBefore.IsActive)
-        {
-            query = query.Where(x => x.LockoutTime <= this.FilterLockBefore.Value);
-        }
-
-        // Reset Time Range
-        if (this.FilterResetAfter.IsActive)
-        {
-            query = query.Where(x => x.ResetTime != null && x.ResetTime >= this.FilterResetAfter.Value);
-        }
-
-        if (this.FilterResetBefore.IsActive)
-        {
-            query = query.Where(x => x.ResetTime != null && x.ResetTime <= this.FilterResetBefore.Value);
-        }
-
-        return query;
-    }
+    protected override IQueryable<LockoutReset> ApplyFilters(IQueryable<LockoutReset> query) =>
+        query
+            .ApplyFilterIfActive(this.FilterCmmsNum, x => x.CmmsNum == this.FilterCmmsNum.Value)
+            .ApplyFilterIfActive(this.FilterStatus, x => x.Status == this.FilterStatus.Value)
+            .ApplyFilterIfActive(this.FilterReason, x => x.Reason != null && x.Reason.Contains(this.FilterReason.Value!))
+            .ApplyFilterIfActive(this.FilterLineName, x => x.LineName != null && x.LineName.Contains(this.FilterLineName.Value!))
+            .ApplyFilterIfActive(this.FilterResetter, x => x.ResetBy != null && x.ResetBy.Contains(this.FilterResetter.Value!))
+            .ApplyFilterIfActive(this.FilterLockAfter, x => x.LockoutTime >= this.FilterLockAfter.Value)
+            .ApplyFilterIfActive(this.FilterLockBefore, x => x.LockoutTime <= this.FilterLockBefore.Value)
+            .ApplyFilterIfActive(this.FilterResetAfter, x => x.ResetTime != null && x.ResetTime >= this.FilterResetAfter.Value)
+            .ApplyFilterIfActive(this.FilterResetBefore, x => x.ResetTime != null && x.ResetTime <= this.FilterResetBefore.Value)
+            .ApplyLockoutLevelFilterIfActive(this.FilterLockoutLevel, this.LockoutLevelGreaterThan);
 
     /// <summary>
     /// Calculate the filter state hash for the hydration check, factoring in the lockout level filter direction.
